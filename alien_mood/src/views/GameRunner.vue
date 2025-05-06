@@ -19,7 +19,7 @@
       삭제
     </button>
 
-    <!-- 색상 선택 버튼 -->
+    <!-- 이미지 선택 버튼 -->
     <div
       style="
         position: absolute;
@@ -31,43 +31,18 @@
       "
     >
       <button
-        @click="addItem('red')"
+        v-for="(image, index) in predefinedImages"
+        :key="index"
+        @click="addImage(image)"
         style="
-          background-color: red;
-          color: white;
           padding: 10px;
           border: none;
           border-radius: 5px;
           cursor: pointer;
+          background-color: lightgray;
         "
       >
-        Red
-      </button>
-      <button
-        @click="addItem('green')"
-        style="
-          background-color: green;
-          color: white;
-          padding: 10px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-        "
-      >
-        Green
-      </button>
-      <button
-        @click="addItem('blue')"
-        style="
-          background-color: blue;
-          color: white;
-          padding: 10px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-        "
-      >
-        Blue
+        이미지 {{ index + 1 }}
       </button>
     </div>
 
@@ -134,6 +109,10 @@
 </template>
 
 <script>
+import image1 from "@/assets/image/Ae.png";
+import image2 from "@/assets/image/Ai.png";
+import image3 from "@/assets/image/css.png";
+
 export default {
   data() {
     return {
@@ -153,6 +132,7 @@ export default {
           name: "item-0",
         },
       ],
+      predefinedImages: [image1, image2, image3], // 미리 정의된 이미지
       images: [],
       selectedItemIndex: null,
       selectedImageName: "",
@@ -176,6 +156,25 @@ export default {
         draggable: true,
         name: `item-${this.items.length}`,
       });
+    },
+    // 미리 정의된 이미지 추가
+    addImage(imageSrc) {
+      const img = new Image();
+      img.src = imageSrc;
+      img.onload = () => {
+        this.images.push({
+          x: (Math.random() * this.stageSize.width) / 2,
+          y: (Math.random() * this.stageSize.height) / 2,
+          width: img.width,
+          height: img.height,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+          name: `image${this.images.length + 1}`,
+          image: img,
+          draggable: true,
+        });
+      };
     },
     // 파일 선택 창 열기
     triggerFileInput() {
@@ -228,15 +227,34 @@ export default {
         reader.readAsDataURL(file);
       });
     },
-    // 도형 및 이미지 선택
     selectItem(index) {
       this.selectedItemIndex = index;
       this.selectedImageName = null;
       this.updateTransformer();
+
+      // 선택된 도형을 배열의 맨 뒤로 이동
+      const item = this.items[index];
+      this.items.splice(index, 1); // 배열에서 제거
+      this.items.push(item); // 배열의 맨 뒤로 추가
+
+      // Transformer 업데이트
+      this.updateTransformer();
     },
+    // 이미지 선택
     selectImage(name) {
       this.selectedImageName = name;
       this.selectedItemIndex = null;
+      this.updateTransformer();
+
+      // 선택된 이미지를 배열의 맨 뒤로 이동
+      const imageIndex = this.images.findIndex((img) => img.name === name);
+      if (imageIndex > -1) {
+        const image = this.images[imageIndex];
+        this.images.splice(imageIndex, 1); // 배열에서 제거
+        this.images.push(image); // 배열의 맨 뒤로 추가
+      }
+
+      // Transformer 업데이트
       this.updateTransformer();
     },
     // Transformer 업데이트
