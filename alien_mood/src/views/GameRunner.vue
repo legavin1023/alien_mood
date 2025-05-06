@@ -120,7 +120,15 @@
           @dragend="onDragEnd"
         />
         <!-- Transformer -->
-        <v-transformer ref="transformer" />
+        <v-transformer
+          ref="transformer"
+          :enabledAnchors="[
+            'top-left',
+            'top-right',
+            'bottom-left',
+            'bottom-right',
+          ]"
+        />
       </v-layer>
     </v-stage>
   </div>
