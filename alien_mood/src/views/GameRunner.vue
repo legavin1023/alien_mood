@@ -113,8 +113,7 @@
           :key="image.name"
           :config="image"
           :name="image.name"
-          @click="selectImage(image.name)"
-          @touchstart="selectImage(image.name)"
+          @pointerdown="selectImage(image.name)"
           @transformend="handleTransformEnd"
           draggable
           @dragstart="onDragStart"
