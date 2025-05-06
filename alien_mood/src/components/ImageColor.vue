@@ -3,19 +3,19 @@
     <!-- 색상 선택 버튼 -->
     <div style="display: flex; gap: 10px; margin-bottom: 10px">
       <button
-        @click="addItem('red')"
+        @click="changeBoxColor('red')"
         style="background-color: red; color: white; padding: 10px"
       >
         Red
       </button>
       <button
-        @click="addItem('green')"
+        @click="changeBoxColor('green')"
         style="background-color: green; color: white; padding: 10px"
       >
         Green
       </button>
       <button
-        @click="addItem('blue')"
+        @click="changeBoxColor('blue')"
         style="background-color: blue; color: white; padding: 10px"
       >
         Blue
@@ -25,12 +25,14 @@
     <!-- 캔버스 -->
     <v-stage :config="stageSize">
       <v-layer>
+        <!-- 단일 상자 -->
+        <v-rect :config="boxConfig" draggable />
+        <!-- 여러 아이템 -->
         <v-rect
           v-for="(item, index) in items"
           :key="index"
           :config="item"
           @click="selectItem(index)"
-          @touchstart="selectItem(index)"
           @transformend="handleTransformEnd(index, $event)"
           draggable
         />
@@ -49,33 +51,24 @@ export default {
         width: window.innerWidth,
         height: window.innerHeight,
       },
-      items: [
-        {
-          x: window.innerWidth / 2 - 50, // 캔버스 중앙에 위치
-          y: window.innerHeight / 2 - 50, // 캔버스 중앙에 위치
-          width: 100,
-          height: 100,
-          fill: "blue", // 초기 색상
-          rotation: 0,
-          draggable: true,
-          name: "item-0",
-        },
-      ], // 캔버스에 추가된 아이템 배열
-      selectedItemIndex: 0, // 첫 번째 아이템을 선택 상태로 설정
+      items: [], // 캔버스에 추가된 아이템 배열
+      selectedItemIndex: null, // 선택된 아이템의 인덱스
+      boxConfig: {
+        x: 150,
+        y: 150,
+        width: 100,
+        height: 100,
+        fill: "red", // 초기 색상
+        draggable: true,
+      },
     };
-  },
-  mounted() {
-    // 페이지 로드 시 Transformer 초기화
-    this.$nextTick(() => {
-      this.updateTransformer();
-    });
   },
   methods: {
     addItem(color) {
       // 새로운 아이템 추가
       this.items.push({
-        x: this.stageSize.width / 2 - 50, // 캔버스 중앙에 위치
-        y: this.stageSize.height / 2 - 50, // 캔버스 중앙에 위치
+        x: Math.random() * this.stageSize.width, // 랜덤 x 좌표
+        y: Math.random() * this.stageSize.height, // 랜덤 y 좌표
         width: 100,
         height: 100,
         fill: color, // 버튼에서 전달된 색상
@@ -84,18 +77,17 @@ export default {
         name: `item-${this.items.length}`, // 고유 이름
       });
     },
+    changeBoxColor(color) {
+      // 상자의 색상을 변경
+      this.boxConfig.fill = color;
+    },
     selectItem(index) {
       // 아이템 선택
       this.selectedItemIndex = index;
       this.updateTransformer();
     },
     updateTransformer() {
-      const transformer = this.$refs.transformer?.getNode();
-      if (!transformer) {
-        console.warn("Transformer is not initialized.");
-        return;
-      }
-
+      const transformer = this.$refs.transformer.getNode();
       const stage = transformer.getStage();
       const selectedNode = stage.findOne(`.item-${this.selectedItemIndex}`);
 
@@ -117,13 +109,6 @@ export default {
       item.width = e.target.width();
       item.height = e.target.height();
       item.rotation = e.target.rotation();
-    },
-    deleteShape(index) {
-      if (index !== null && this.items[index]) {
-        this.items.splice(index, 1);
-        this.selectedItemIndex = null;
-        this.updateTransformer();
-      }
     },
   },
 };

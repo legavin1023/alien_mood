@@ -5,9 +5,13 @@
       v-for="image in images"
       :key="image.name"
       :config="image"
+      :name="image.name"
       @click="selectImage(image.name)"
       @transformend="handleTransformEnd"
       draggable
+      @dragstart="onDragStart"
+      @dragend="onDragEnd"
+      class="imageButton"
     />
     <!-- Transformer -->
     <v-transformer ref="transformer" />
@@ -17,6 +21,7 @@
     <input
       ref="fileInput"
       type="file"
+      accept="image/*"
       style="display: none"
       @change="onFileChange"
       multiple
@@ -31,7 +36,7 @@ export default {
       images: [], // 업로드된 이미지 배열
       selectedImageName: "", // 선택된 이미지 이름
       textConfig: {
-        text: "Click to upload images", // 업로드 버튼 텍스트
+        text: "이미지 첨부", // 업로드 버튼 텍스트
         fontSize: 18,
         fill: "blue",
         x: 50,
@@ -42,12 +47,17 @@ export default {
   methods: {
     // 파일 선택 창 열기
     triggerFileInput() {
-      this.$refs.fileInput.click();
+      const fileInput = this.$refs.fileInput;
+      if (fileInput) {
+        fileInput.click(); // 파일 선택 창 열기
+      } else {
+        console.error("File input element not found.");
+      }
     },
     // 파일 선택 후 이미지 추가
     onFileChange(event) {
       const files = event.target.files;
-      if (!files) return;
+      if (!files || files.length === 0) return;
 
       Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
@@ -104,6 +114,35 @@ export default {
       image.scaleX = e.target.scaleX();
       image.scaleY = e.target.scaleY();
     },
+    // 드래그 시작 시 클래스 추가
+    onDragStart(e) {
+      e.target.addName("dragging");
+    },
+    // 드래그 종료 시 클래스 제거
+    onDragEnd(e) {
+      const stage = e.target.getStage();
+      const draggedNode = stage.findOne(".dragging");
+      if (draggedNode) {
+        draggedNode.removeName("dragging");
+      }
+      const name = e.target.name(); // 드래그된 이미지의 이름 가져오기
+      this.$emit("drag-end", name);
+    },
+    // 이미지 삭제
+    deleteImage(name) {
+      this.images = this.images.filter((img) => img.name !== name);
+      if (this.selectedImageName === name) {
+        this.selectedImageName = "";
+        this.updateTransformer(); // Transformer 초기화
+      }
+    },
   },
 };
 </script>
+
+<style>
+.imageButton {
+  position: fixed;
+  top: 10px;
+}
+</style>
