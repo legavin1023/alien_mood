@@ -120,18 +120,6 @@ export default {
         width: window.innerWidth,
         height: window.innerHeight,
       },
-      items: [
-        {
-          x: window.innerWidth / 2 - 50,
-          y: window.innerHeight / 2 - 50,
-          width: 100,
-          height: 100,
-          fill: "blue",
-          rotation: 0,
-          draggable: true,
-          name: "item-0",
-        },
-      ],
       predefinedImages: [image1, image2, image3], // 미리 정의된 이미지
       images: [],
       selectedItemIndex: null,
