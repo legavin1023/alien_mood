@@ -161,16 +161,22 @@ export default {
             top: this.canvas.height / 2,
             originX: "center",
             originY: "center",
-            scaleX: 0.5,
-            scaleY: 0.5,
-            selectable: true,
-            evented: true,
-            hasControls: true,
-            hasBorders: true,
-            lockScalingX: true, // X축 크기 조절 비활성화
-            lockScalingY: true, // Y축 크기 조절 비활성화
+            width: 200, // 고정된 너비
+            height: 200, // 고정된 높이
+            scaleX: 1, // 스케일 고정
+            scaleY: 1, // 스케일 고정
+            selectable: false, // 선택 불가능
+            evented: false, // 이벤트 비활성화
+            hasControls: false, // 컨트롤 핸들 숨김
+            hasBorders: false, // 테두리 숨김
+            lockMovementX: true, // X축 이동 고정
+            lockMovementY: true, // Y축 이동 고정
+            lockScalingX: true, // X축 크기 조절 고정
+            lockScalingY: true, // Y축 크기 조절 고정
+            lockRotation: true, // 회전 고정
           })
         );
+
         this.canvas.add(fabricImage);
         this.defaultImageObject = fabricImage; // 기본 이미지 객체 참조 저장
         this.canvas.renderAll();
@@ -226,12 +232,19 @@ export default {
       img.onload = () => {
         this.defaultImageObject.setElement(img);
         this.defaultImageObject.set({
-          scaleX: 0.5,
-          scaleY: 0.5,
-          selectable: true,
-          evented: true,
-          hasControls: true,
-          hasBorders: true,
+          width: 200, // 고정된 너비
+          height: 200, // 고정된 높이
+          scaleX: 1, // 스케일 고정
+          scaleY: 1, // 스케일 고정
+          selectable: false, // 선택 불가능
+          evented: false, // 이벤트 비활성화
+          hasControls: false, // 컨트롤 핸들 숨김
+          hasBorders: false, // 테두리 숨김
+          lockMovementX: true, // X축 이동 고정
+          lockMovementY: true, // Y축 이동 고정
+          lockScalingX: true, // X축 크기 조절 고정
+          lockScalingY: true, // Y축 크기 조절 고정
+          lockRotation: true, // 회전 고정
         });
         this.canvas.renderAll();
       };
