@@ -31,8 +31,12 @@
         <TestFabric></TestFabric>
       </div>
       <div v-if="activeTab === 2">
-        <h2>탭 3 내용</h2>
-        <p>이곳은 세 번째 탭의 내용입니다.</p>
+        <h2>삭제 테스트</h2>
+        <deleteTest></deleteTest>
+      </div>
+      <div v-if="activeTab === 3">
+        <h2>점 테스트</h2>
+        <rotationTest></rotationTest>
       </div>
     </div>
   </div>
@@ -41,16 +45,25 @@
 <script>
 import TestKonva from "@/components/TestKonva.vue";
 import TestFabric from "@/components/TestFabric.vue";
+import deleteTest from "@/components/deleteTest.vue";
+import rotationTest from "@/components/rotationTest.vue";
 
 export default {
   components: {
     TestKonva,
     TestFabric,
+    deleteTest,
+    rotationTest,
   },
   data() {
     return {
       activeTab: 0, // 현재 활성화된 탭 (0부터 시작)
-      tabs: [{ name: "Konva" }, { name: "Fabric" }, { name: "탭 3" }],
+      tabs: [
+        { name: "Konva" },
+        { name: "Fabric" },
+        { name: "탭 3" },
+        { name: "탭 4" },
+      ],
     };
   },
 };
