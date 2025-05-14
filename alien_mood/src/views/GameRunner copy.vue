@@ -14,8 +14,8 @@
 </template>
 
 <script>
-import ImageLoader from "../components/ImageLoader.vue";
-import ImageCanvas from "../components/ImageCanvas.vue";
+import ImageLoader from "../components/TEST/ImageLoader.vue";
+import ImageCanvas from "../components/TEST/ImageCanvas.vue";
 
 export default {
   components: {
