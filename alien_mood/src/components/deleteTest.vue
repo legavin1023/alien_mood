@@ -86,7 +86,7 @@ export default {
       rect.controls.deleteControl = new Control({
         x: 0.5,
         y: -0.5,
-        offsetY: 16,
+        offsetY: 0,
         cursorStyle: "pointer",
         mouseUpHandler: deleteObject,
         render: renderDeleteIcon, // renderDeleteIcon 함수 사용
