@@ -35,16 +35,15 @@
         multiple
       />
       <!-- SVG 색상 변경 버튼 -->
-      <button @click="changeMultipleSvgColors">SVG 두 부분 색상 변경</button>
-      <button @click="changeSvgColorById('green_2', '#ff0055')">
-        green_2 빨강
-      </button>
-      <button @click="changeSvgColorById('green_2', '#00bfff')">
-        green_2 파랑
-      </button>
-      <button @click="changeSvgColorById('green_2', '#00cc44')">
-        green_2 초록
-      </button>
+      <div>
+        <button
+          v-for="(btn, idx) in colorButtonList"
+          :key="btn.label + idx"
+          @click="changeSvgColorsByIds(btn.colors)"
+        >
+          {{ btn.label }}
+        </button>
+      </div>
     </div>
     <canvas
       ref="canvas"
@@ -83,28 +82,35 @@ export default {
       additionalImages: [image1, image2, image3],
       defaultImageObject: null,
       svgGroup: null, // SVG 그룹 참조 저장
+      // data()에 추가
+      colorButtonList: [
+        {
+          label: "핑크색",
+          colors: [
+            { id: "green_1", color: "#ff0055" },
+            { id: "green_2", color: "#00bfff" },
+          ],
+        },
+        {
+          label: "초록색",
+          colors: [
+            { id: "green_1", color: "#00cc44" },
+            { id: "green_2", color: "#ffe066" },
+          ],
+        },
+        // ...필요한 만큼 추가
+      ],
     };
   },
   methods: {
-    changeSvgColorById(id, color) {
+    changeSvgColorsByIds(idColorList) {
       if (!this.svgGroup) return;
       this.svgGroup.forEachObject((obj) => {
-        if (obj.id === id || obj.get("id") === id) {
-          obj.set("fill", color);
-        }
-      });
-      this.canvas.requestRenderAll();
-    },
-
-    changeMultipleSvgColors() {
-      if (!this.svgGroup) return;
-      this.svgGroup.forEachObject((obj) => {
-        if (obj.id === "green_1" || obj.get("id") === "green_1") {
-          obj.set("fill", "#eeeeee");
-        }
-        if (obj.id === "green_2" || obj.get("id") === "green_2") {
-          obj.set("fill", "#00bfff");
-        }
+        idColorList.forEach(({ id, color }) => {
+          if (obj.id === id || obj.get("id") === id) {
+            obj.set("fill", color);
+          }
+        });
       });
       this.canvas.requestRenderAll();
     },
