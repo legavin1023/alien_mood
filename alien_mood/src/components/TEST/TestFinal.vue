@@ -363,10 +363,19 @@ export default {
         const target = this.canvas.findTarget(evt, false);
         if (target && target.selectable !== false) {
           this.canvas.setActiveObject(target);
-          this.canvas.requestRenderAll();
+
+          // 오브젝트를 맨 위로 올리기 (zIndex 조정)
+          const objs = this.canvas.getObjects();
+          const idx = objs.indexOf(target);
+          if (idx > -1 && idx !== objs.length - 1) {
+            objs.splice(idx, 1); // 기존 위치에서 제거
+            objs.push(target); // 맨 뒤(맨 위)로 추가
+            this.canvas._objects = objs; // 내부 배열 동기화 (v6)
+          }
+          this.canvas.renderAll();
         } else {
           this.canvas.discardActiveObject();
-          this.canvas.requestRenderAll();
+          this.canvas.renderAll();
         }
       });
     },
