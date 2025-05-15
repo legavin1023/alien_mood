@@ -43,7 +43,7 @@
 </template>
 
 <script>
-import { ref, onMounted, markRaw } from "vue";
+import { markRaw } from "vue";
 import {
   Canvas,
   Rect,
@@ -51,6 +51,8 @@ import {
   Control,
   util,
   controlsUtils,
+  loadSVGFromURL,
+  Group,
 } from "fabric";
 import image1 from "@/assets/image/Ae.png";
 import image2 from "@/assets/image/Ai.png";
@@ -61,6 +63,7 @@ import image6 from "@/assets/image/다가오는솔라스 (4).jpg";
 import deleteIcon from "@/assets/image/deleteIcon.png";
 import rotateIcon from "@/assets/image/custom-handle.png";
 import resizeIcon from "@/assets/image/html.png";
+import svgUrl from "@/assets/image/green.svg";
 
 export default {
   data() {
@@ -81,13 +84,14 @@ export default {
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
+      ctx.globalAlpha = 0.7;
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
       ctx.arc(0, 0, hitSize / 2, 0, 2 * Math.PI);
       ctx.fillStyle = "#000";
       ctx.fill();
       ctx.globalAlpha = 1.0;
-      ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.restore();
     },
     renderRotateIcon(ctx, left, top, _styleOverride, fabricObject) {
@@ -99,13 +103,14 @@ export default {
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
+      ctx.globalAlpha = 0.7;
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
       ctx.arc(0, 0, hitSize / 2, 0, 2 * Math.PI);
       ctx.fillStyle = "#000";
       ctx.fill();
       ctx.globalAlpha = 1.0;
-      ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.restore();
     },
     renderResizeIcon(ctx, left, top, _styleOverride, fabricObject) {
@@ -117,13 +122,14 @@ export default {
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
+      ctx.globalAlpha = 0.7;
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
       ctx.arc(0, 0, hitSize / 2, 0, 2 * Math.PI);
       ctx.fillStyle = "#000";
       ctx.fill();
       ctx.globalAlpha = 1.0;
-      ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.restore();
     },
     deleteObject(_eventData, transform) {
@@ -154,7 +160,7 @@ export default {
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
         cornerSize: 28,
-        hitbox: { width: 60, height: 60 }, // ← 패딩 효과 (28+16*2=60)
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.rotateControl = new Control({
         x: 0,
@@ -163,7 +169,7 @@ export default {
         render: this.renderRotateIcon,
         cornerSize: 28,
         actionHandler: controlsUtils.rotationWithSnapping,
-        hitbox: { width: 60, height: 60 }, // ← 패딩 효과
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.resizeControl = new Control({
         x: 0.5,
@@ -172,7 +178,7 @@ export default {
         render: this.renderResizeIcon,
         cornerSize: 28,
         actionHandler: controlsUtils.scalingEqually,
-        hitbox: { width: 60, height: 60 }, // ← 패딩 효과
+        hitbox: { width: 60, height: 60 },
       });
 
       obj.set({
@@ -249,7 +255,6 @@ export default {
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => {
-        // 원본 크기
         const targetWidth = 300;
         const targetHeight = 300;
         const scaleX = targetWidth / img.width;
@@ -308,6 +313,7 @@ export default {
               originY: "center",
               scaleX: 0.5,
               scaleY: 0.5,
+              padding: 16,
               selectable: true,
               evented: true,
               hasControls: false,
@@ -320,6 +326,85 @@ export default {
           };
         };
         reader.readAsDataURL(file);
+      });
+    },
+    animate(obj) {
+      obj.animate(
+        { angle: 360 },
+        {
+          duration: 3000,
+          onComplete: () => {
+            obj.set("angle", 0);
+            this.animate(obj);
+          },
+          easing: (t, b, c, d) => (c * t) / d + b,
+        }
+      );
+    },
+    addSvgMatrixToCanvas() {
+      loadSVGFromURL(svgUrl, (objects, options) => {
+        const baseSvg = new Group(objects, {
+          ...options,
+          originX: "center",
+          originY: "center",
+          selectable: true,
+          evented: true,
+          hasControls: false,
+          hasBorders: false,
+          padding: 16,
+        });
+
+        // SVG 원본 크기
+        const bounds = baseSvg.getBoundingRect();
+        const svgWidth = bounds.width;
+        const svgHeight = bounds.height;
+
+        // 행렬 정보
+        const colCount = 5;
+        const rowCount = 3;
+        const margin = 40;
+
+        // 전체 SVG 행렬의 크기
+        const totalWidth = svgWidth * colCount + margin * (colCount - 1);
+        const totalHeight = svgHeight * rowCount + margin * (rowCount - 1);
+
+        // 캔버스 크기에 맞게 scale 계산 (90% 영역에 맞춤)
+        const scaleX = (this.canvas.width * 0.9) / totalWidth;
+        const scaleY = (this.canvas.height * 0.9) / totalHeight;
+        const scale = Math.min(scaleX, scaleY);
+
+        // scale 적용된 SVG 크기
+        const scaledSvgWidth = svgWidth * scale;
+        const scaledSvgHeight = svgHeight * scale;
+        const scaledMargin = margin * scale;
+
+        // 중앙 배치 좌표
+        const matrixWidth =
+          scaledSvgWidth * colCount + scaledMargin * (colCount - 1);
+        const matrixHeight =
+          scaledSvgHeight * rowCount + scaledMargin * (rowCount - 1);
+        const startX =
+          this.canvas.width / 2 - matrixWidth / 2 + scaledSvgWidth / 2;
+        const startY =
+          this.canvas.height / 2 - matrixHeight / 2 + scaledSvgHeight / 2;
+
+        // SVG 행렬로 복제 및 배치
+        for (let i = 0; i < rowCount; i++) {
+          for (let j = 0; j < colCount; j++) {
+            baseSvg.clone((clone) => {
+              clone.set({
+                left: startX + j * (scaledSvgWidth + scaledMargin),
+                top: startY + i * (scaledSvgHeight + scaledMargin),
+                scaleX: scale,
+                scaleY: scale,
+              });
+              this.addCustomControls(clone);
+              this.canvas.add(clone);
+              this.animate(clone);
+            });
+          }
+        }
+        this.canvas.renderAll();
       });
     },
     initializeCanvas() {
@@ -357,7 +442,10 @@ export default {
         this.canvas.renderAll();
       };
 
-      // 클릭 시 바로 선택 상태로
+      // SVG 여러 개를 캔버스에 바로 추가
+      this.addSvgMatrixToCanvas();
+
+      // 클릭 시 바로 선택 상태로 & zIndex 조정
       this.canvas.on("mouse:up", (opt) => {
         const evt = opt.e;
         const target = this.canvas.findTarget(evt, false);
@@ -368,9 +456,9 @@ export default {
           const objs = this.canvas.getObjects();
           const idx = objs.indexOf(target);
           if (idx > -1 && idx !== objs.length - 1) {
-            objs.splice(idx, 1); // 기존 위치에서 제거
-            objs.push(target); // 맨 뒤(맨 위)로 추가
-            this.canvas._objects = objs; // 내부 배열 동기화 (v6)
+            objs.splice(idx, 1);
+            objs.push(target);
+            this.canvas._objects = objs;
           }
           this.canvas.renderAll();
         } else {
