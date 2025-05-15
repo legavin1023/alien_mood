@@ -34,6 +34,17 @@
         @change="onFileChange"
         multiple
       />
+      <!-- SVG 색상 변경 버튼 -->
+      <button @click="changeMultipleSvgColors">SVG 두 부분 색상 변경</button>
+      <button @click="changeSvgColorById('green_2', '#ff0055')">
+        green_2 빨강
+      </button>
+      <button @click="changeSvgColorById('green_2', '#00bfff')">
+        green_2 파랑
+      </button>
+      <button @click="changeSvgColorById('green_2', '#00cc44')">
+        green_2 초록
+      </button>
     </div>
     <canvas
       ref="canvas"
@@ -51,6 +62,7 @@ import {
   Control,
   util,
   controlsUtils,
+  loadSVGFromURL,
 } from "fabric";
 import image1 from "@/assets/image/Ae.png";
 import image2 from "@/assets/image/Ai.png";
@@ -61,6 +73,7 @@ import image6 from "@/assets/image/다가오는솔라스 (4).jpg";
 import deleteIcon from "@/assets/image/deleteIcon.png";
 import rotateIcon from "@/assets/image/custom-handle.png";
 import resizeIcon from "@/assets/image/html.png";
+import svgUrl from "@/assets/image/green.svg"; // svg 파일 import
 
 export default {
   data() {
@@ -69,9 +82,78 @@ export default {
       predefinedImages: [image4, image5, image6],
       additionalImages: [image1, image2, image3],
       defaultImageObject: null,
+      svgGroup: null, // SVG 그룹 참조 저장
     };
   },
   methods: {
+    changeSvgColorById(id, color) {
+      if (!this.svgGroup) return;
+      this.svgGroup.forEachObject((obj) => {
+        if (obj.id === id || obj.get("id") === id) {
+          obj.set("fill", color);
+        }
+      });
+      this.canvas.requestRenderAll();
+    },
+
+    changeMultipleSvgColors() {
+      if (!this.svgGroup) return;
+      this.svgGroup.forEachObject((obj) => {
+        if (obj.id === "green_1" || obj.get("id") === "green_1") {
+          obj.set("fill", "#eeeeee");
+        }
+        if (obj.id === "green_2" || obj.get("id") === "green_2") {
+          obj.set("fill", "#00bfff");
+        }
+      });
+      this.canvas.requestRenderAll();
+    },
+    async addSvgToCanvas() {
+      const loadedSVG = await loadSVGFromURL(svgUrl);
+      let svgGroup = util.groupSVGElements(loadedSVG.objects);
+
+      // getBoundingRect가 0일 경우 대비
+      let bounds = svgGroup.getBoundingRect();
+      let svgWidth = bounds.width;
+      let svgHeight = bounds.height;
+      if (!svgWidth || !svgHeight) {
+        svgWidth = loadedSVG.options.width || 200;
+        svgHeight = loadedSVG.options.height || 200;
+      }
+
+      const canvasWidth = this.canvas.width;
+      const canvasHeight = this.canvas.height;
+      const scale = Math.min(
+        (canvasWidth * 0.5) / svgWidth,
+        (canvasHeight * 0.5) / svgHeight,
+        1
+      );
+
+      svgGroup.set({
+        left: 100,
+        top: 100,
+        originX: "center",
+        originY: "center",
+        scaleX: scale,
+        scaleY: scale,
+        selectable: true,
+        evented: true,
+      });
+
+      this.addCustomControls(svgGroup);
+      this.canvas.add(svgGroup);
+      this.canvas.setActiveObject(svgGroup);
+      this.svgGroup = svgGroup; // SVG 그룹 참조 저장
+      this.canvas.renderAll();
+    },
+    changeSvgColor(color) {
+      if (!this.svgGroup) return;
+      // SVG 그룹 내부의 모든 path/shape의 fill 변경
+      this.svgGroup.forEachObject((obj) => {
+        if (obj.set) obj.set("fill", color);
+      });
+      this.canvas.requestRenderAll();
+    },
     renderDeleteIcon(ctx, left, top, _styleOverride, fabricObject) {
       const size = 28;
       const padding = 16;
@@ -154,7 +236,7 @@ export default {
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
         cornerSize: 28,
-        hitbox: { width: 60, height: 60 }, // ← 패딩 효과 (28+16*2=60)
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.rotateControl = new Control({
         x: 0,
@@ -163,7 +245,7 @@ export default {
         render: this.renderRotateIcon,
         cornerSize: 28,
         actionHandler: controlsUtils.rotationWithSnapping,
-        hitbox: { width: 60, height: 60 }, // ← 패딩 효과
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.resizeControl = new Control({
         x: 0.5,
@@ -172,7 +254,7 @@ export default {
         render: this.renderResizeIcon,
         cornerSize: 28,
         actionHandler: controlsUtils.scalingEqually,
-        hitbox: { width: 60, height: 60 }, // ← 패딩 효과
+        hitbox: { width: 60, height: 60 },
       });
 
       obj.set({
@@ -249,7 +331,6 @@ export default {
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => {
-        // 원본 크기
         const targetWidth = 300;
         const targetHeight = 300;
         const scaleX = targetWidth / img.width;
@@ -356,6 +437,7 @@ export default {
         this.defaultImageObject = fabricImage;
         this.canvas.renderAll();
       };
+      this.addSvgToCanvas();
 
       // 클릭 시 바로 선택 상태로
       this.canvas.on("mouse:up", (opt) => {
@@ -368,9 +450,9 @@ export default {
           const objs = this.canvas.getObjects();
           const idx = objs.indexOf(target);
           if (idx > -1 && idx !== objs.length - 1) {
-            objs.splice(idx, 1); // 기존 위치에서 제거
-            objs.push(target); // 맨 뒤(맨 위)로 추가
-            this.canvas._objects = objs; // 내부 배열 동기화 (v6)
+            objs.splice(idx, 1);
+            objs.push(target);
+            this.canvas._objects = objs;
           }
           this.canvas.renderAll();
         } else {
