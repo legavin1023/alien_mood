@@ -2,7 +2,12 @@
   <div style="position: relative; width: 100%; height: 100%">
     <canvas
       ref="canvas"
-      style="border: 1px solid #ccc; width: 100%; height: 100%"
+      style="
+        border: 1px solid #ccc;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      "
     ></canvas>
   </div>
 </template>
@@ -14,7 +19,7 @@ import { Canvas, Rect, Control, util, controlsUtils } from "fabric";
 // 프로젝트 내부 이미지 import
 import deleteIcon from "@/assets/image/deleteIcon.png"; // 삭제 버튼
 import rotateIcon from "@/assets/image/custom-handle.png"; // 회전 버튼
-import resizeIcon from "@/assets/image/html.png"; // 오른쪽 하단에 추가할 아이콘(예시)
+import resizeIcon from "@/assets/image/html.png"; // 크기조절 버튼
 
 export default {
   setup() {
@@ -24,6 +29,7 @@ export default {
     let centerX = 200;
     let centerY = 200;
 
+    // 크기조절 핸들(오른쪽 하단) 렌더 함수 (이미지+투명 hit영역)
     const renderResizeIcon = function (
       ctx,
       left,
@@ -32,18 +38,18 @@ export default {
       fabricObject
     ) {
       const size = 24;
-      const padding = 16; // 패딩 추가
-      const hitSize = size + padding * 2; // 실제 클릭 영역(핸들) 크기
+      const padding = 16; // 핸들 주변 여백
+      const hitSize = size + padding * 2; // 클릭 영역 크기
 
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
-      // 1. 이미지 먼저 그림 (투명하게)
+      // 1. 이미지 그림
       const img = new window.Image();
       img.src = resizeIcon;
       ctx.globalAlpha = 0.7;
       ctx.drawImage(img, -size / 2, -size / 2, size, size);
-      // 2. 점(핸들)도 같이 그림 (투명, 하지만 hit 영역은 살아있음)
+      // 2. 투명한 원(hit 영역)
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
       ctx.arc(0, 0, hitSize / 2, 0, 2 * Math.PI);
@@ -53,7 +59,7 @@ export default {
       ctx.restore();
     };
 
-    // 캔버스 초기화
+    // 캔버스 초기화 함수
     const initializeCanvas = () => {
       canvas.value = markRaw(
         new Canvas(canvas.value, {
@@ -62,14 +68,9 @@ export default {
           selection: true,
         })
       );
-
-      // Fabric.js 기본 설정
-      Rect.prototype.transparentCorners = false;
-      Rect.prototype.cornerColor = "blue";
-      Rect.prototype.cornerStyle = "circle";
     };
 
-    // 사용자 정의 삭제 버튼 렌더링
+    // 삭제 버튼 렌더 함수
     const renderDeleteIcon = (ctx, left, top, _styleOverride, fabricObject) => {
       const size = 24;
       const img = new Image();
@@ -81,7 +82,7 @@ export default {
       ctx.restore();
     };
 
-    // 사용자 정의 회전 버튼 렌더링
+    // 회전 버튼 렌더 함수
     const renderRotateIcon = (ctx, left, top, _styleOverride, fabricObject) => {
       const size = 24;
       const img = new Image();
@@ -100,7 +101,7 @@ export default {
       canvasInstance.requestRenderAll();
     };
 
-    // 사각형 추가
+    // 사각형(이미지) 추가 함수
     const addRectangle = () => {
       // 중앙 좌표로 생성
       const rect = new Rect({
@@ -110,18 +111,34 @@ export default {
         width: 200,
         height: 200,
         objectCaching: false,
-        stroke: null, // 선 없음
-        strokeWidth: 0, // 선 두께 없음
-        strokeDashArray: null, // 점선 없음
+        stroke: null,
+        strokeWidth: 0,
+        strokeDashArray: null,
         originX: "center",
         originY: "center",
         centeredRotation: true,
         targetObj: "rectangle",
         padding: 16,
-        borderDashArray: [6, 4], // ← 이 줄 추가!
+        borderDashArray: [6, 4], // 컨트롤 박스(핸들 연결선) 점선
+        cornerColor: "#00000000", // ★ 원하는 색상
+        cornerStyle: "circle", // (선택)
       });
 
-      // 사용자 정의 삭제 컨트롤 추가
+      // 모든 기본 핸들 숨기기
+      rect.setControlsVisibility({
+        tl: false,
+        tr: false,
+        bl: false,
+        br: false,
+        mt: false,
+        mb: false,
+        ml: false,
+        mr: false,
+        mtr: true,
+        // 커스텀 컨트롤(deleteControl, rotateControl, resizeControl)도 필요 없으면 추가하지 마세요.
+      });
+
+      // 삭제 컨트롤 추가
       rect.controls.deleteControl = new Control({
         x: 0.5,
         y: -0.5,
@@ -131,7 +148,7 @@ export default {
         cornerSize: 24,
       });
 
-      // 사용자 정의 회전 컨트롤 추가
+      // 회전 컨트롤 추가
       rect.controls.rotateControl = new Control({
         x: 0,
         y: -0.7,
@@ -141,17 +158,18 @@ export default {
         actionHandler: controlsUtils.rotationWithSnapping,
       });
 
-      // 오른쪽 하단에 이미지 컨트롤 추가
+      // 크기조절 컨트롤 추가
       rect.controls.resizeControl = new Control({
         x: 0.5,
         y: 0.5,
         cursorStyle: "se-resize",
         render: renderResizeIcon,
         cornerSize: 24,
+        actionHandler: controlsUtils.scalingEqually,
       });
 
       canvas.value.add(rect);
-      canvas.value.setActiveObject(rect);
+      // canvas.value.setActiveObject(rect); // 추가한 사각형을 선택 상태로 설정
 
       // 오브젝트 수정 시 중앙 좌표 갱신
       canvas.value.on("object:modified", (e) => {
@@ -162,6 +180,7 @@ export default {
       });
     };
 
+    // 컴포넌트 마운트 시 캔버스 초기화 및 사각형 추가
     onMounted(() => {
       initializeCanvas();
       addRectangle();
