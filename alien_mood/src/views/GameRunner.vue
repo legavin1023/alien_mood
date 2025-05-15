@@ -38,6 +38,10 @@
         <h2>점 테스트</h2>
         <rotationTest></rotationTest>
       </div>
+      <div v-if="activeTab === 4">
+        <h2>최종</h2>
+        <TestFinal></TestFinal>
+      </div>
     </div>
   </div>
 </template>
@@ -47,6 +51,7 @@ import TestKonva from "@/components/TestKonva.vue";
 import TestFabric from "@/components/TestFabric.vue";
 import deleteTest from "@/components/deleteTest.vue";
 import rotationTest from "@/components/rotationTest.vue";
+import TestFinal from "@/components/TEST/TestFinal.vue";
 
 export default {
   components: {
@@ -54,6 +59,7 @@ export default {
     TestFabric,
     deleteTest,
     rotationTest,
+    TestFinal,
   },
   data() {
     return {
@@ -61,8 +67,9 @@ export default {
       tabs: [
         { name: "Konva" },
         { name: "Fabric" },
-        { name: "탭 3" },
-        { name: "탭 4" },
+        { name: "추가 삭제" },
+        { name: "삭제 회전 크기" },
+        { name: "최종" },
       ],
     };
   },
