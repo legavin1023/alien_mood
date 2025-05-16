@@ -44,6 +44,60 @@
           {{ btn.label }}
         </button>
       </div>
+      <!-- 옷 종류별 아이콘 버튼 -->
+      <div style="display: flex; gap: 8px">
+        <button
+          v-for="clothes in clothesList"
+          :key="clothes.name"
+          @click="selectClothes(clothes)"
+          style="background: none; border: none; cursor: pointer"
+        >
+          <img :src="clothes.icon" :alt="clothes.name" width="48" height="48" />
+          <div>{{ clothes.name }}</div>
+        </button>
+      </div>
+
+      <!-- 옷을 입혔을 때만 색상 버튼 노출 -->
+      <div v-if="selectedClothes" style="margin: 12px 0">
+        <button
+          v-for="(btn, idx) in selectedClothes.colorButtons"
+          :key="btn.label + idx"
+          @click="changeClothesColors(btn.targets)"
+          style="display: flex; align-items: center; gap: 8px"
+        >
+          <!-- 메인 컬러 미리보기 동그라미 -->
+          <span
+            v-if="btn.mainColor"
+            :style="{
+              display: 'inline-block',
+              width: '18px',
+              height: '18px',
+              borderRadius: '50%',
+              background: btn.mainColor,
+              border: '1px solid #aaa',
+            }"
+          ></span>
+          {{ btn.label }}
+        </button>
+      </div>
+      <!-- 포즈 선택 버튼 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px">
+        <button
+          v-for="pose in ['인간', '인간팔']"
+          :key="pose"
+          :style="{
+            background: currentPose === pose ? '#00bfff' : '#eee',
+            color: currentPose === pose ? '#fff' : '#333',
+            border: '1px solid #ccc',
+            borderRadius: '6px',
+            padding: '6px 16px',
+            cursor: 'pointer',
+          }"
+          @click="changePose(pose)"
+        >
+          {{ pose }}
+        </button>
+      </div>
       <button @click="saveCanvasAsImage">이미지로 저장</button>
     </div>
     <canvas
@@ -79,25 +133,32 @@ import image6 from "@/assets/image/다가오는솔라스 (4).jpg";
 import deleteIcon from "@/assets/image/deleteIcon.png";
 import rotateIcon from "@/assets/image/custom-handle.png";
 import resizeIcon from "@/assets/image/html.png";
-import svgUrl from "@/assets/image/green.svg"; // svg 파일 import
-
+import svgUrl from "@/assets/image/green.svg";
+import shirt from "@/assets/image/shirt.svg";
+import shirtArm from "@/assets/image/shirt팔.svg";
+import drass from "@/assets/image/dress.svg";
+import drassArm from "@/assets/image/dress팔.svg";
+import human from "@/assets/image/인간.svg";
+import humanArm from "@/assets/image/인간팔.svg";
 export default {
   data() {
     return {
       canvas: null,
       predefinedImages: [image4, image5, image6],
       additionalImages: [
-        { src: image1, label: "😀" },
-        { src: image2, label: "😂" },
-        { src: image3, label: "😍" },
+        { src: image1, label: "에펙" },
+        { src: image2, label: "일러" },
+        { src: image3, label: "html" },
         // ...이모티콘 추가
       ],
       defaultImageObject: null,
       svgGroup: null, // SVG 그룹 참조 저장
+      currentPose: "인간", // 포즈
       // data()에 추가
       colorButtonList: [
         {
           label: "핑크색",
+
           colors: [
             { id: "green_1", color: "#ff0055" },
             { id: "green_2", color: "#00bfff" },
@@ -111,11 +172,188 @@ export default {
           ],
         },
       ],
+
+      clothesList: [
+        {
+          name: "드레스",
+          icon: drass,
+          svgUrl: {
+            인간: drass,
+            인간팔: drassArm,
+          },
+          position: {
+            인간: { left: 90, top: 470 },
+            인간팔: { left: 170, top: 480 },
+          },
+          colorButtons: [
+            {
+              label: "핑크/파랑",
+              mainColor: "#ff69b4", // 대표색
+              targets: [
+                { type: "id", value: "dress_body1", color: "#ff69b4" },
+                { type: "id", value: "dress_body2", color: "#ff69b4" },
+                { type: "id", value: "belt", color: "#00bfff" },
+              ],
+            },
+            {
+              label: "핑크/노랑",
+              mainColor: "#ffe066", // 대표색
+              targets: [
+                { type: "id", value: "dress_body1", color: "#ff69b4" },
+                { type: "id", value: "dress_body2", color: "#ff69b4" },
+                { type: "id", value: "belt", color: "#ffe066" },
+              ],
+            },
+            {
+              label: "노랑/파랑",
+              mainColor: "#00cc44", // 대표색
+              targets: [
+                { type: "id", value: "dress_body1", color: "#00cc44" },
+                { type: "id", value: "dress_body2", color: "#00cc44" },
+                { type: "id", value: "belt", color: "#00bfff" },
+              ],
+            },
+          ],
+        },
+        {
+          name: "셔츠",
+          icon: shirt,
+          svgUrl: {
+            인간: shirt,
+            인간팔: shirtArm,
+          },
+          position: {
+            인간: { left: 70, top: 440 },
+            인간팔: { left: 160, top: 440 },
+          },
+          colorButtons: [
+            {
+              label: "하양/파랑",
+              mainColor: "#00bfff",
+              targets: [
+                { type: "id", value: "main", color: "#fff" },
+                { type: "id", value: "collar", color: "#00bfff" },
+              ],
+            },
+          ],
+        },
+      ],
+      selectedClothes: null, // 현재 선택된 옷 데이터
     };
   },
   methods: {
+    // methods에 추가 또는 initializeCanvas 내에 아래 코드 삽입
+    async addHumanSvg() {
+      // 포즈에 따라 파일 선택
+      const humanSvgUrl = this.currentPose === "인간팔" ? humanArm : human;
+      const loadedSVG = await loadSVGFromURL(humanSvgUrl);
+      let svgGroup = util.groupSVGElements(loadedSVG.objects);
+      svgGroup.set({
+        left: 100,
+        top: this.canvas.height / 2,
+        originX: "left",
+        originY: "center",
+        selectable: false,
+        evented: false,
+        hasControls: false,
+        hasBorders: false,
+        lockMovementX: true,
+        lockMovementY: true,
+        lockScalingX: true,
+        lockScalingY: true,
+        lockRotation: true,
+      });
+      this.canvas.add(svgGroup);
+      this.humanSvgGroup = svgGroup;
+      this.canvas.renderAll();
+    },
+    async selectClothes(clothes) {
+      if (this.clothesSvgGroup) {
+        this.canvas.remove(this.clothesSvgGroup);
+      }
+      // 포즈에 맞는 SVG 파일 선택
+      const svgUrl =
+        typeof clothes.svgUrl === "object"
+          ? clothes.svgUrl[this.currentPose] || clothes.svgUrl["인간"]
+          : clothes.svgUrl;
+      const loadedSVG = await loadSVGFromURL(svgUrl);
+      let svgGroup = util.groupSVGElements(loadedSVG.objects);
+
+      // 포즈별 위치 적용
+      const pos = clothes.position?.[this.currentPose] || {
+        left: 100,
+        top: 200,
+      };
+
+      svgGroup.set({
+        left: pos.left,
+        top: pos.top,
+        originX: "left",
+        originY: "center",
+        selectable: false,
+        evented: false,
+        hasControls: false,
+        hasBorders: false,
+        lockMovementX: true,
+        lockMovementY: true,
+        lockScalingX: true,
+        lockScalingY: true,
+        lockRotation: true,
+      });
+      this.canvas.add(svgGroup);
+      this.clothesSvgGroup = svgGroup;
+      this.selectedClothes = clothes;
+      this.canvas.renderAll();
+    },
+    async changePose(pose) {
+      this.currentPose = pose;
+      // 기존 인간/옷 SVG 삭제
+      if (this.humanSvgGroup) this.canvas.remove(this.humanSvgGroup);
+      if (this.clothesSvgGroup) this.canvas.remove(this.clothesSvgGroup);
+      // 새 포즈의 인간 SVG 추가
+      await this.addHumanSvg();
+      // 옷이 선택되어 있으면 새 위치에 다시 추가
+      if (this.selectedClothes) {
+        await this.selectClothes(this.selectedClothes);
+      }
+    },
+    // 옷 SVG 색상 변경 (id/class 모두 지원, 재귀 순회)
+    changeClothesColors(targets) {
+      if (!this.clothesSvgGroup) return;
+
+      function changeRecursive(obj) {
+        if (obj._objects) {
+          obj._objects.forEach((child) => changeRecursive(child));
+        } else {
+          targets.forEach(({ type, value, color }) => {
+            if (
+              (type === "id" &&
+                (obj.id === value || (obj.get && obj.get("id") === value))) ||
+              (type === "class" &&
+                (obj.className === value ||
+                  (obj.get && obj.get("class") === value)))
+            ) {
+              obj.set("fill", color);
+            }
+          });
+        }
+      }
+
+      changeRecursive(this.clothesSvgGroup);
+      this.canvas.requestRenderAll();
+    },
     saveCanvasAsImage() {
-      // 캔버스를 PNG 데이터 URL로 변환
+      // 파일명 입력 받기 (기본값: 오늘기분외계인)
+      let filename = prompt("저장할 파일 이름을 입력하세요.", "오늘기분외계인");
+      if (!filename || filename.trim() === "") {
+        filename = "오늘기분외계인";
+      }
+      // 확장자 자동 추가
+      if (!filename.endsWith(".jpg") && !filename.endsWith(".png")) {
+        filename += ".jpg";
+      }
+
+      // 캔버스를 이미지로 변환
       const dataUrl = this.canvas.toDataURL({
         format: "jpg",
         quality: 1.0,
@@ -124,7 +362,7 @@ export default {
       // 다운로드 링크 생성 및 클릭
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = "canvas.jpg";
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -461,17 +699,18 @@ export default {
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
-
-    initializeCanvas() {
+    async initializeCanvas() {
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
           width: window.innerWidth,
           height: window.innerHeight,
           selection: true,
-          backgroundColor: "#ffffff", // 원하는 배경색
+          backgroundColor: "#ffffff",
         })
       );
 
+      // 인간 SVG 추가 (여기서 await!)
+      await this.addHumanSvg();
       // 기본 이미지 추가
       const img = new window.Image();
       img.src = this.predefinedImages[0];
@@ -522,8 +761,8 @@ export default {
       });
     },
   },
-  mounted() {
-    this.initializeCanvas();
+  mounted: async function () {
+    await this.initializeCanvas();
   },
 };
 </script>
