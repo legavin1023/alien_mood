@@ -1,4 +1,5 @@
 <template>
+  <!-- UI 패널: 이모티콘, 도형, 이미지, 옷, 색상, 포즈, 저장 버튼 등 -->
   <div style="position: relative; width: 100%; height: 100%">
     <div
       style="
@@ -10,6 +11,7 @@
         gap: 10px;
       "
     >
+      <!-- 이모티콘 추가 버튼 -->
       <button
         v-for="img in additionalImages"
         :key="img.src"
@@ -18,7 +20,9 @@
       >
         <img :src="img.src" :alt="img.label" width="32" height="32" />
       </button>
+      <!-- 도형 추가 버튼 -->
       <button @click="addRectangle">도형 추가</button>
+      <!-- 기본 이미지 교체 버튼 -->
       <button
         v-for="(img, idx) in predefinedImages"
         :key="'replace-img-' + idx"
@@ -26,6 +30,7 @@
       >
         기본 이미지 변경 {{ idx + 1 }}
       </button>
+      <!-- 파일 첨부 버튼 -->
       <button @click="triggerFileInput">이미지 첨부</button>
       <input
         ref="fileInput"
@@ -34,7 +39,7 @@
         style="display: none"
         @change="onFileChange"
       />
-      <!-- SVG 색상 변경 버튼 -->
+      <!-- SVG 색상 변경 버튼 (예시) -->
       <div>
         <button
           v-for="(btn, idx) in colorButtonList"
@@ -56,8 +61,7 @@
           <div>{{ clothes.name }}</div>
         </button>
       </div>
-
-      <!-- 옷을 입혔을 때만 색상 버튼 노출 -->
+      <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
       <div v-if="selectedClothes" style="margin: 12px 0">
         <button
           v-for="(btn, idx) in selectedClothes.colorButtons"
@@ -65,7 +69,7 @@
           @click="changeClothesColors(btn.targets)"
           style="display: flex; align-items: center; gap: 8px"
         >
-          <!-- 메인 컬러 미리보기 동그라미 -->
+          <!-- 대표색 미리보기 -->
           <span
             v-if="btn.mainColor"
             :style="{
@@ -98,8 +102,10 @@
           {{ pose }}
         </button>
       </div>
+      <!-- 캔버스 저장 버튼 -->
       <button @click="saveCanvasAsImage">이미지로 저장</button>
     </div>
+    <!-- Fabric.js 캔버스 -->
     <canvas
       ref="canvas"
       style="border: 1px solid #ccc; width: 100%; height: 100%"
@@ -108,6 +114,7 @@
 </template>
 
 <script>
+// 이미지, SVG 등 리소스 import
 const req = require.context("@/assets/image", false, /\.png$/);
 const additionalImages = req.keys().map((key, idx) => ({
   src: req(key),
@@ -140,25 +147,25 @@ import drass from "@/assets/image/dress.svg";
 import drassArm from "@/assets/image/dress팔.svg";
 import human from "@/assets/image/인간.svg";
 import humanArm from "@/assets/image/인간팔.svg";
+
 export default {
   data() {
     return {
-      canvas: null,
-      predefinedImages: [image4, image5, image6],
+      canvas: null, // Fabric.js 캔버스 인스턴스
+      predefinedImages: [image4, image5, image6], // 기본 이미지 목록
       additionalImages: [
         { src: image1, label: "에펙" },
         { src: image2, label: "일러" },
         { src: image3, label: "html" },
         // ...이모티콘 추가
       ],
-      defaultImageObject: null,
-      svgGroup: null, // SVG 그룹 참조 저장
-      currentPose: "인간", // 포즈
-      // data()에 추가
+      defaultImageObject: null, // 교체 가능한 기본 이미지 오브젝트
+      svgGroup: null, // SVG 그룹 참조 저장 (일반 SVG)
+      currentPose: "인간", // 현재 포즈 상태
       colorButtonList: [
+        // SVG 색상 변경용 버튼 예시
         {
           label: "핑크색",
-
           colors: [
             { id: "green_1", color: "#ff0055" },
             { id: "green_2", color: "#00bfff" },
@@ -172,7 +179,7 @@ export default {
           ],
         },
       ],
-
+      // 옷 목록 (포즈별 SVG, 위치, 색상 옵션 포함)
       clothesList: [
         {
           name: "드레스",
@@ -197,7 +204,7 @@ export default {
             },
             {
               label: "핑크/노랑",
-              mainColor: "#ffe066", // 대표색
+              mainColor: "#ffe066",
               targets: [
                 { type: "id", value: "dress_body1", color: "#ff69b4" },
                 { type: "id", value: "dress_body2", color: "#ff69b4" },
@@ -206,7 +213,7 @@ export default {
             },
             {
               label: "노랑/파랑",
-              mainColor: "#00cc44", // 대표색
+              mainColor: "#00cc44",
               targets: [
                 { type: "id", value: "dress_body1", color: "#00cc44" },
                 { type: "id", value: "dress_body2", color: "#00cc44" },
@@ -242,9 +249,8 @@ export default {
     };
   },
   methods: {
-    // methods에 추가 또는 initializeCanvas 내에 아래 코드 삽입
+    // 포즈에 따라 인간 SVG를 캔버스에 추가
     async addHumanSvg() {
-      // 포즈에 따라 파일 선택
       const humanSvgUrl = this.currentPose === "인간팔" ? humanArm : human;
       const loadedSVG = await loadSVGFromURL(humanSvgUrl);
       let svgGroup = util.groupSVGElements(loadedSVG.objects);
@@ -267,6 +273,7 @@ export default {
       this.humanSvgGroup = svgGroup;
       this.canvas.renderAll();
     },
+    // 옷 선택 시 캔버스에 추가 (포즈별 SVG/위치 적용)
     async selectClothes(clothes) {
       if (this.clothesSvgGroup) {
         this.canvas.remove(this.clothesSvgGroup);
@@ -305,14 +312,12 @@ export default {
       this.selectedClothes = clothes;
       this.canvas.renderAll();
     },
+    // 포즈 변경 시 인간/옷 SVG 갱신
     async changePose(pose) {
       this.currentPose = pose;
-      // 기존 인간/옷 SVG 삭제
       if (this.humanSvgGroup) this.canvas.remove(this.humanSvgGroup);
       if (this.clothesSvgGroup) this.canvas.remove(this.clothesSvgGroup);
-      // 새 포즈의 인간 SVG 추가
       await this.addHumanSvg();
-      // 옷이 선택되어 있으면 새 위치에 다시 추가
       if (this.selectedClothes) {
         await this.selectClothes(this.selectedClothes);
       }
@@ -320,7 +325,6 @@ export default {
     // 옷 SVG 색상 변경 (id/class 모두 지원, 재귀 순회)
     changeClothesColors(targets) {
       if (!this.clothesSvgGroup) return;
-
       function changeRecursive(obj) {
         if (obj._objects) {
           obj._objects.forEach((child) => changeRecursive(child));
@@ -338,28 +342,22 @@ export default {
           });
         }
       }
-
       changeRecursive(this.clothesSvgGroup);
       this.canvas.requestRenderAll();
     },
+    // 캔버스 이미지를 파일로 저장 (파일명 입력 가능, 기본값: 오늘기분외계인)
     saveCanvasAsImage() {
-      // 파일명 입력 받기 (기본값: 오늘기분외계인)
       let filename = prompt("저장할 파일 이름을 입력하세요.", "오늘기분외계인");
       if (!filename || filename.trim() === "") {
         filename = "오늘기분외계인";
       }
-      // 확장자 자동 추가
       if (!filename.endsWith(".jpg") && !filename.endsWith(".png")) {
         filename += ".jpg";
       }
-
-      // 캔버스를 이미지로 변환
       const dataUrl = this.canvas.toDataURL({
         format: "jpg",
         quality: 1.0,
       });
-
-      // 다운로드 링크 생성 및 클릭
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = filename;
@@ -367,6 +365,7 @@ export default {
       link.click();
       document.body.removeChild(link);
     },
+    // 일반 SVG 색상 변경 (id 기준)
     changeSvgColorsByIds(idColorList) {
       if (!this.svgGroup) return;
       this.svgGroup.forEachObject((obj) => {
@@ -378,11 +377,10 @@ export default {
       });
       this.canvas.requestRenderAll();
     },
+    // 일반 SVG 추가 (예시)
     async addSvgToCanvas() {
       const loadedSVG = await loadSVGFromURL(svgUrl);
       let svgGroup = util.groupSVGElements(loadedSVG.objects);
-
-      // getBoundingRect가 0일 경우 대비
       let bounds = svgGroup.getBoundingRect();
       let svgWidth = bounds.width;
       let svgHeight = bounds.height;
@@ -390,7 +388,6 @@ export default {
         svgWidth = loadedSVG.options.width || 200;
         svgHeight = loadedSVG.options.height || 200;
       }
-
       const canvasWidth = this.canvas.width;
       const canvasHeight = this.canvas.height;
       const scale = Math.min(
@@ -398,7 +395,6 @@ export default {
         (canvasHeight * 0.5) / svgHeight,
         1
       );
-
       svgGroup.set({
         left: 100,
         top: 100,
@@ -409,21 +405,21 @@ export default {
         selectable: true,
         evented: true,
       });
-
       this.addCustomControls(svgGroup);
       this.canvas.add(svgGroup);
       this.canvas.setActiveObject(svgGroup);
-      this.svgGroup = svgGroup; // SVG 그룹 참조 저장
+      this.svgGroup = svgGroup;
       this.canvas.renderAll();
     },
+    // 일반 SVG 전체 색상 변경 (예시)
     changeSvgColor(color) {
       if (!this.svgGroup) return;
-      // SVG 그룹 내부의 모든 path/shape의 fill 변경
       this.svgGroup.forEachObject((obj) => {
         if (obj.set) obj.set("fill", color);
       });
       this.canvas.requestRenderAll();
     },
+    // 커스텀 컨트롤(삭제/회전/크기조절) 렌더링 함수들
     renderDeleteIcon(ctx, left, top, _styleOverride, fabricObject) {
       const size = 28;
       const padding = 16;
@@ -478,11 +474,13 @@ export default {
       ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.restore();
     },
+    // 오브젝트 삭제 핸들러
     deleteObject(_eventData, transform) {
       const canvasInstance = transform.target.canvas;
       canvasInstance.remove(transform.target);
       canvasInstance.requestRenderAll();
     },
+    // 커스텀 컨트롤 추가
     addCustomControls(obj) {
       obj.setControlsVisibility({
         tl: false,
@@ -575,6 +573,7 @@ export default {
         obj.canvas.requestRenderAll();
       });
     },
+    // 도형(사각형) 추가
     addRectangle() {
       const rect = new Rect({
         left: this.canvas.width / 2,
@@ -597,6 +596,7 @@ export default {
       this.canvas.setActiveObject(rect);
       this.canvas.renderAll();
     },
+    // 이미지 추가 (최대 3개)
     addImage(imageSrc) {
       // "사용자가 추가한 이미지"만 카운트 (selectable !== false)
       const imageCount = this.canvas
@@ -635,7 +635,7 @@ export default {
         this.canvas.renderAll();
       };
     },
-
+    // 파일 첨부로 이미지 추가
     onFileChange(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
@@ -681,6 +681,7 @@ export default {
       };
       reader.readAsDataURL(file);
     },
+    // 기본 이미지 교체
     replaceDefaultImage(newImageSrc) {
       if (!this.defaultImageObject) return;
       const img = new window.Image();
@@ -696,9 +697,11 @@ export default {
         this.canvas.renderAll();
       };
     },
+    // 파일 첨부 input 트리거
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
+    // 캔버스 초기화 및 기본 오브젝트 추가
     async initializeCanvas() {
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
@@ -708,8 +711,7 @@ export default {
           backgroundColor: "#ffffff",
         })
       );
-
-      // 인간 SVG 추가 (여기서 await!)
+      // 인간 SVG 추가
       await this.addHumanSvg();
       // 기본 이미지 추가
       const img = new window.Image();
@@ -736,16 +738,15 @@ export default {
         this.defaultImageObject = fabricImage;
         this.canvas.renderAll();
       };
+      // 예시 SVG 추가
       this.addSvgToCanvas();
-
-      // 클릭 시 바로 선택 상태로
+      // 오브젝트 클릭 시 선택/비선택 처리
       this.canvas.on("mouse:up", (opt) => {
         const evt = opt.e;
         const target = this.canvas.findTarget(evt, false);
         if (target && target.selectable !== false) {
           this.canvas.setActiveObject(target);
-
-          // 오브젝트를 맨 위로 올리기 (zIndex 조정)
+          // 오브젝트를 맨 위로 올리기
           const objs = this.canvas.getObjects();
           const idx = objs.indexOf(target);
           if (idx > -1 && idx !== objs.length - 1) {
@@ -761,6 +762,7 @@ export default {
       });
     },
   },
+  // 컴포넌트 마운트 시 캔버스 초기화
   mounted: async function () {
     await this.initializeCanvas();
   },
