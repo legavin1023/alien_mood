@@ -11,11 +11,12 @@
       "
     >
       <button
-        v-for="(img, idx) in additionalImages"
-        :key="'add-img-' + idx"
-        @click="addImage(img)"
+        v-for="img in additionalImages"
+        :key="img.src"
+        @click="addImage(img.src)"
+        style="background: none; border: none; cursor: pointer"
       >
-        이미지 추가 {{ idx + 1 }}
+        <img :src="img.src" :alt="img.label" width="32" height="32" />
       </button>
       <button @click="addRectangle">도형 추가</button>
       <button
@@ -32,7 +33,6 @@
         accept="image/*"
         style="display: none"
         @change="onFileChange"
-        multiple
       />
       <!-- SVG 색상 변경 버튼 -->
       <div>
@@ -44,6 +44,7 @@
           {{ btn.label }}
         </button>
       </div>
+      <button @click="saveCanvasAsImage">이미지로 저장</button>
     </div>
     <canvas
       ref="canvas"
@@ -53,6 +54,12 @@
 </template>
 
 <script>
+const req = require.context("@/assets/image", false, /\.png$/);
+const additionalImages = req.keys().map((key, idx) => ({
+  src: req(key),
+  label: `emoji${idx + 1}`,
+}));
+
 import { ref, onMounted, markRaw } from "vue";
 import {
   Canvas,
@@ -79,7 +86,12 @@ export default {
     return {
       canvas: null,
       predefinedImages: [image4, image5, image6],
-      additionalImages: [image1, image2, image3],
+      additionalImages: [
+        { src: image1, label: "😀" },
+        { src: image2, label: "😂" },
+        { src: image3, label: "😍" },
+        // ...이모티콘 추가
+      ],
       defaultImageObject: null,
       svgGroup: null, // SVG 그룹 참조 저장
       // data()에 추가
@@ -98,11 +110,25 @@ export default {
             { id: "green_2", color: "#ffe066" },
           ],
         },
-        // ...필요한 만큼 추가
       ],
     };
   },
   methods: {
+    saveCanvasAsImage() {
+      // 캔버스를 PNG 데이터 URL로 변환
+      const dataUrl = this.canvas.toDataURL({
+        format: "jpg",
+        quality: 1.0,
+      });
+
+      // 다운로드 링크 생성 및 클릭
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "canvas.jpg";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
     changeSvgColorsByIds(idColorList) {
       if (!this.svgGroup) return;
       this.svgGroup.forEachObject((obj) => {
@@ -334,6 +360,16 @@ export default {
       this.canvas.renderAll();
     },
     addImage(imageSrc) {
+      // "사용자가 추가한 이미지"만 카운트 (selectable !== false)
+      const imageCount = this.canvas
+        .getObjects()
+        .filter(
+          (obj) => obj.type === "image" && obj.selectable !== false
+        ).length;
+      if (imageCount >= 3) {
+        alert("이미지는 최대 3개까지만 추가할 수 있습니다.");
+        return;
+      }
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => {
@@ -361,6 +397,52 @@ export default {
         this.canvas.renderAll();
       };
     },
+
+    onFileChange(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      // "사용자가 추가한 이미지"만 카운트 (selectable !== false)
+      let imageCount = this.canvas
+        .getObjects()
+        .filter(
+          (obj) => obj.type === "image" && obj.selectable !== false
+        ).length;
+
+      if (imageCount >= 3) {
+        alert("이미지는 최대 3개까지만 추가할 수 있습니다.");
+        return;
+      }
+
+      // 항상 첫 번째 파일만 추가
+      const file = files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const fabricImage = new FabricImage(img, {
+            left: this.canvas.width / 2,
+            top: this.canvas.height / 2,
+            originX: "center",
+            originY: "center",
+            scaleX: 0.5,
+            scaleY: 0.5,
+            selectable: true,
+            evented: true,
+            hasControls: false,
+            hasBorders: false,
+          });
+          this.addCustomControls(fabricImage);
+          this.canvas.add(fabricImage);
+          this.canvas.setActiveObject(fabricImage);
+          this.canvas.renderAll();
+        };
+      };
+      reader.readAsDataURL(file);
+    },
     replaceDefaultImage(newImageSrc) {
       if (!this.defaultImageObject) return;
       const img = new window.Image();
@@ -379,42 +461,14 @@ export default {
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
-    onFileChange(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new window.Image();
-          img.src = e.target.result;
-          img.onload = () => {
-            const fabricImage = new FabricImage(img, {
-              left: this.canvas.width / 2,
-              top: this.canvas.height / 2,
-              originX: "center",
-              originY: "center",
-              scaleX: 0.5,
-              scaleY: 0.5,
-              selectable: true,
-              evented: true,
-              hasControls: false,
-              hasBorders: false,
-            });
-            this.addCustomControls(fabricImage);
-            this.canvas.add(fabricImage);
-            this.canvas.setActiveObject(fabricImage);
-            this.canvas.renderAll();
-          };
-        };
-        reader.readAsDataURL(file);
-      });
-    },
+
     initializeCanvas() {
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
           width: window.innerWidth,
           height: window.innerHeight,
           selection: true,
+          backgroundColor: "#ffffff", // 원하는 배경색
         })
       );
 
