@@ -151,6 +151,7 @@ export default {
   data() {
     return {
       canvas: null, // Fabric.js 캔버스 인스턴스
+      isRestoring: false, // 복원 중 여부
       predefinedImages: [image4, image5, image6], // 기본 이미지 목록
       additionalImages: [
         { src: image1, label: "에펙" },
@@ -159,7 +160,6 @@ export default {
         // ...이모티콘 추가
       ],
       defaultImageObject: null, // 교체 가능한 기본 이미지 오브젝트
-      svgGroup: null, // SVG 그룹 참조 저장 (일반 SVG)
       currentPose: "인간", // 현재 포즈 상태
       colorButtonList: [
         // SVG 색상 변경용 버튼 예시
@@ -234,11 +234,11 @@ export default {
           },
           colorButtons: [
             {
-              label: "핑크/파랑",
-              mainColor: "#ff69b4", // 대표색
+              label: "검정/흰색색",
+              mainColor: "#3E3E3EFF", // 대표색
               targets: [
-                { type: "id", value: "main", color: "#ff69b4" },
-                { type: "id", value: "collar", color: "#00bfff" },
+                { type: "id", value: "main", color: "#3E3E3EFF" },
+                { type: "id", value: "collar", color: "#DDDDDDFF" },
               ],
             },
             {
@@ -265,8 +265,61 @@ export default {
     };
   },
   methods: {
+    //상태 저장
+    saveAvatarToLocal() {
+      const data = {
+        currentPose: this.currentPose,
+        selectedClothesName: this.selectedClothes?.name,
+        selectedColorIndexes: this.selectedColorIndexes,
+        // 필요하다면 배경, 추가 이미지 등도 포함
+      };
+
+      localStorage.setItem("avatarOptions", JSON.stringify(data));
+    },
+    // 로컬 스토리지에서 아바타 복원
+    restoreAvatarFromLocal() {
+      this.isRestoring = true;
+      const data = localStorage.getItem("avatarOptions");
+      if (!data) {
+        this.isRestoring = false;
+        return;
+      }
+      const parsed = JSON.parse(data);
+
+      // 1. 색상 인덱스 복원
+      if (parsed.selectedColorIndexes) {
+        this.selectedColorIndexes = parsed.selectedColorIndexes;
+      }
+
+      // 2. 포즈 복원
+      if (parsed.currentPose) this.currentPose = parsed.currentPose;
+
+      // 3. 인간 SVG를 포즈에 맞게 다시 그림
+      this.addHumanSvg();
+
+      // 4. 옷 복원 + 색상 적용
+      if (parsed.selectedClothesName) {
+        const clothes = this.clothesList.find(
+          (c) => c.name === parsed.selectedClothesName
+        );
+        if (clothes) {
+          this.selectClothes(clothes);
+          const idx = parsed.selectedColorIndexes?.[clothes.name] ?? 0;
+          const btn = clothes.colorButtons[idx];
+          if (btn) {
+            this.changeClothesColors(btn.targets, clothes.name, idx);
+          }
+        }
+      }
+      this.isRestoring = false;
+    },
     // 포즈에 따라 인간 SVG를 캔버스에 추가
     async addHumanSvg() {
+      // 기존 인간 SVG가 있으면 삭제
+      if (this.humanSvgGroup) {
+        this.canvas.remove(this.humanSvgGroup);
+        this.humanSvgGroup = null;
+      }
       const humanSvgUrl = this.currentPose === "인간팔" ? humanArm : human;
       const loadedSVG = await loadSVGFromURL(humanSvgUrl);
       let svgGroup = util.groupSVGElements(loadedSVG.objects);
@@ -331,6 +384,7 @@ export default {
       const btn = clothes.colorButtons[idx];
       if (btn) {
         this.changeClothesColors(btn.targets, clothes.name, idx);
+        this.saveAvatarToLocal();
       }
     },
     // 포즈 변경 시 인간/옷 SVG 갱신
@@ -341,6 +395,8 @@ export default {
       await this.addHumanSvg();
       if (this.selectedClothes) {
         await this.selectClothes(this.selectedClothes);
+        this.saveAvatarToLocal();
+        this.saveAvatarToLocal();
       }
     },
     // 옷 SVG 색상 변경 (id/class 모두 지원, 재귀 순회)
@@ -372,7 +428,13 @@ export default {
         ...this.selectedColorIndexes,
         [clothesName]: idx,
       };
+
+      // 색상 변경 시에도 저장!
+      if (!this.isRestoring) {
+        this.saveAvatarToLocal();
+      }
     },
+
     // 캔버스 이미지를 파일로 저장 (파일명 입력 가능, 기본값: 오늘기분외계인)
     saveCanvasAsImage() {
       let filename = prompt("저장할 파일 이름을 입력하세요.", "오늘기분외계인");
@@ -796,6 +858,7 @@ export default {
   // 컴포넌트 마운트 시 캔버스 초기화
   mounted: async function () {
     await this.initializeCanvas();
+    this.restoreAvatarFromLocal();
   },
 };
 </script>
