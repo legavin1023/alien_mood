@@ -188,8 +188,8 @@ export default {
             인간팔: drassArm,
           },
           position: {
-            인간: { left: 90, top: 470 },
-            인간팔: { left: 170, top: 480 },
+            인간: { left: -10, top: 0 },
+            인간팔: { left: 70, top: 0 },
           },
           colorButtons: [
             {
@@ -229,8 +229,8 @@ export default {
             인간팔: shirtArm,
           },
           position: {
-            인간: { left: 70, top: 440 },
-            인간팔: { left: 160, top: 440 },
+            인간: { left: -20, top: -30 },
+            인간팔: { left: 60, top: -30 },
           },
           colorButtons: [
             {
@@ -354,16 +354,16 @@ export default {
       const loadedSVG = await loadSVGFromURL(svgUrl);
       let svgGroup = util.groupSVGElements(loadedSVG.objects);
 
-      const pos = clothes.position?.[this.currentPose] || {
-        left: 100,
-        top: 200,
-      };
-
+      // 인간 SVG 기준 + 옷 position 값 더해서 위치/스케일 맞추기
+      const human = this.humanSvgGroup;
+      const pos = clothes.position?.[this.currentPose] || { left: 0, top: 0 };
       svgGroup.set({
-        left: pos.left,
-        top: pos.top,
-        originX: "left",
-        originY: "center",
+        left: human.left + pos.left,
+        top: human.top + pos.top,
+        originX: human.originX,
+        originY: human.originY,
+        scaleX: human.scaleX,
+        scaleY: human.scaleY,
         selectable: false,
         evented: false,
         hasControls: false,
@@ -374,6 +374,7 @@ export default {
         lockScalingY: true,
         lockRotation: true,
       });
+
       this.canvas.add(svgGroup);
       this.clothesSvgGroup = svgGroup;
       this.selectedClothes = clothes;
