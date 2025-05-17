@@ -66,10 +66,9 @@
         <button
           v-for="(btn, idx) in selectedClothes.colorButtons"
           :key="btn.label + idx"
-          @click="changeClothesColors(btn.targets)"
+          @click="changeClothesColors(btn.targets, selectedClothes.name, idx)"
           style="display: flex; align-items: center; gap: 8px"
         >
-          <!-- 대표색 미리보기 -->
           <span
             v-if="btn.mainColor"
             :style="{
@@ -235,17 +234,34 @@ export default {
           },
           colorButtons: [
             {
-              label: "하양/파랑",
-              mainColor: "#00bfff",
+              label: "핑크/파랑",
+              mainColor: "#ff69b4", // 대표색
               targets: [
-                { type: "id", value: "main", color: "#fff" },
+                { type: "id", value: "main", color: "#ff69b4" },
                 { type: "id", value: "collar", color: "#00bfff" },
+              ],
+            },
+            {
+              label: "주황/초록",
+              mainColor: "#FF6969FF",
+              targets: [
+                { type: "id", value: "main", color: "#FF6969FF" },
+                { type: "id", value: "collar", color: "#66FF87FF" },
+              ],
+            },
+            {
+              label: "보라/노랑",
+              mainColor: "#C2CC00FF",
+              targets: [
+                { type: "id", value: "main", color: "#C2CC00FF" },
+                { type: "id", value: "collar", color: "#5900FFFF" },
               ],
             },
           ],
         },
       ],
       selectedClothes: null, // 현재 선택된 옷 데이터
+      selectedColorIndexes: {}, // { [clothes.name]: index }
     };
   },
   methods: {
@@ -278,7 +294,6 @@ export default {
       if (this.clothesSvgGroup) {
         this.canvas.remove(this.clothesSvgGroup);
       }
-      // 포즈에 맞는 SVG 파일 선택
       const svgUrl =
         typeof clothes.svgUrl === "object"
           ? clothes.svgUrl[this.currentPose] || clothes.svgUrl["인간"]
@@ -286,7 +301,6 @@ export default {
       const loadedSVG = await loadSVGFromURL(svgUrl);
       let svgGroup = util.groupSVGElements(loadedSVG.objects);
 
-      // 포즈별 위치 적용
       const pos = clothes.position?.[this.currentPose] || {
         left: 100,
         top: 200,
@@ -311,6 +325,13 @@ export default {
       this.clothesSvgGroup = svgGroup;
       this.selectedClothes = clothes;
       this.canvas.renderAll();
+
+      // 마지막으로 선택한 색상 옵션 적용
+      const idx = this.selectedColorIndexes[clothes.name] ?? 0;
+      const btn = clothes.colorButtons[idx];
+      if (btn) {
+        this.changeClothesColors(btn.targets, clothes.name, idx);
+      }
     },
     // 포즈 변경 시 인간/옷 SVG 갱신
     async changePose(pose) {
@@ -323,8 +344,9 @@ export default {
       }
     },
     // 옷 SVG 색상 변경 (id/class 모두 지원, 재귀 순회)
-    changeClothesColors(targets) {
+    changeClothesColors(targets, clothesName, idx) {
       if (!this.clothesSvgGroup) return;
+      // 색상 적용
       function changeRecursive(obj) {
         if (obj._objects) {
           obj._objects.forEach((child) => changeRecursive(child));
@@ -344,6 +366,12 @@ export default {
       }
       changeRecursive(this.clothesSvgGroup);
       this.canvas.requestRenderAll();
+
+      // 선택된 색상 인덱스 저장
+      this.selectedColorIndexes = {
+        ...this.selectedColorIndexes,
+        [clothesName]: idx,
+      };
     },
     // 캔버스 이미지를 파일로 저장 (파일명 입력 가능, 기본값: 오늘기분외계인)
     saveCanvasAsImage() {
@@ -508,7 +536,8 @@ export default {
       });
       obj.controls.rotateControl = new Control({
         x: 0,
-        y: -0.7,
+        y: -0.5,
+        offsetY: -40, // 경계선(점선)에서 40px 더 위
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
         cornerSize: 28,
@@ -598,32 +627,24 @@ export default {
     },
     // 이미지 추가 (최대 3개)
     addImage(imageSrc) {
-      // "사용자가 추가한 이미지"만 카운트 (selectable !== false)
-      const imageCount = this.canvas
-        .getObjects()
-        .filter(
-          (obj) => obj.type === "image" && obj.selectable !== false
-        ).length;
-      if (imageCount >= 3) {
-        alert("이미지는 최대 3개까지만 추가할 수 있습니다.");
-        return;
-      }
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => {
-        const targetWidth = 300;
-        const targetHeight = 300;
-        const scaleX = targetWidth / img.width;
-        const scaleY = targetHeight / img.height;
-
+        let width = img.width;
+        let height = img.height;
+        // 가로가 400px을 넘으면 비율 유지하며 축소
+        if (width > 400) {
+          const scale = 400 / width;
+          width = 400;
+          height = height * scale;
+        }
         const fabricImage = new FabricImage(img, {
           left: this.canvas.width / 2,
           top: this.canvas.height / 2,
           originX: "center",
           originY: "center",
-          scaleX,
-          scaleY,
-          padding: 16,
+          width,
+          height,
           selectable: true,
           evented: true,
           hasControls: false,
@@ -661,13 +682,23 @@ export default {
         const img = new window.Image();
         img.src = e.target.result;
         img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          let scale = 1;
+          // 가로가 400px을 넘으면 비율 유지하며 축소 (scale만 조정)
+          if (width > 400) {
+            scale = 400 / width;
+          }
           const fabricImage = new FabricImage(img, {
             left: this.canvas.width / 2,
             top: this.canvas.height / 2,
             originX: "center",
             originY: "center",
-            scaleX: 0.5,
-            scaleY: 0.5,
+            // 원본 width/height 유지
+            width: width,
+            height: height,
+            scaleX: scale,
+            scaleY: scale,
             selectable: true,
             evented: true,
             hasControls: false,
