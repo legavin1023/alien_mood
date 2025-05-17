@@ -329,19 +329,23 @@ export default {
         top: this.canvas.height / 2,
         originX: "left",
         originY: "center",
-        selectable: true, // 움직일 수 있게!
+        selectable: true,
         evented: true,
-        hasControls: false,
-        hasBorders: false,
+        hasControls: false, // 도형과 동일
+        hasBorders: false, // 도형과 동일
         lockMovementX: false,
         lockMovementY: false,
-        lockScalingX: true,
-        lockScalingY: true,
-        lockRotation: true,
+        lockScalingX: false, // 크기조절 가능
+        lockScalingY: false,
+        lockRotation: false, // 회전 가능
       });
+
+      // 도형과 동일하게 커스텀 컨트롤(핸들) 추가
+      this.addCustomControls(svgGroup);
+
       this.canvas.add(svgGroup);
       this.humanSvgGroup = svgGroup;
-      this.addHumanMoveListener(); // <<--- 여기서 이벤트 연결
+      this.addHumanMoveListener();
       this.canvas.renderAll();
     },
     // 옷 선택 시 캔버스에 추가 (포즈별 SVG/위치 적용)
@@ -394,6 +398,8 @@ export default {
     addHumanMoveListener() {
       if (!this.humanSvgGroup) return;
       this.humanSvgGroup.set({ selectable: true, evented: true });
+
+      // 이동 시 옷 따라오기
       this.humanSvgGroup.on("moving", () => {
         if (this.clothesSvgGroup && this.selectedClothes) {
           const pos = this.selectedClothes.position?.[this.currentPose] || {
@@ -401,8 +407,31 @@ export default {
             top: 0,
           };
           this.clothesSvgGroup.set({
-            left: this.humanSvgGroup.left + pos.left,
-            top: this.humanSvgGroup.top + pos.top,
+            left:
+              this.humanSvgGroup.left + pos.left * this.humanSvgGroup.scaleX,
+            top: this.humanSvgGroup.top + pos.top * this.humanSvgGroup.scaleY,
+          });
+          this.canvas.renderAll();
+        }
+      });
+
+      // 크기 조절(스케일) 시 옷도 같이 스케일
+      this.humanSvgGroup.on("scaling", () => {
+        if (this.clothesSvgGroup && this.selectedClothes) {
+          // scaleX, scaleY 동기화
+          this.clothesSvgGroup.set({
+            scaleX: this.humanSvgGroup.scaleX,
+            scaleY: this.humanSvgGroup.scaleY,
+          });
+          // 위치도 스케일에 맞게 보정
+          const pos = this.selectedClothes.position?.[this.currentPose] || {
+            left: 0,
+            top: 0,
+          };
+          this.clothesSvgGroup.set({
+            left:
+              this.humanSvgGroup.left + pos.left * this.humanSvgGroup.scaleX,
+            top: this.humanSvgGroup.top + pos.top * this.humanSvgGroup.scaleY,
           });
           this.canvas.renderAll();
         }
@@ -866,20 +895,18 @@ export default {
         ) {
           // 둘 다 앞으로 보내기
           const objs = this.canvas.getObjects();
-          // 인간과 옷을 배열에서 제거
           [this.humanSvgGroup, this.clothesSvgGroup].forEach((obj) => {
             const idx = objs.indexOf(obj);
             if (idx > -1) objs.splice(idx, 1);
           });
-          // 둘 다 배열 맨 뒤로 추가 (순서: 인간 → 옷)
           objs.push(this.humanSvgGroup);
           if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
           this.canvas._objects = objs;
-          // 옷을 선택 상태로
-          if (this.clothesSvgGroup) {
-            this.canvas.setActiveObject(this.clothesSvgGroup);
-          } else {
+          // ★ 인간을 클릭했으면 인간을 선택 상태로!
+          if (target === this.humanSvgGroup) {
             this.canvas.setActiveObject(this.humanSvgGroup);
+          } else if (this.clothesSvgGroup) {
+            this.canvas.setActiveObject(this.clothesSvgGroup);
           }
           this.canvas.renderAll();
         }
