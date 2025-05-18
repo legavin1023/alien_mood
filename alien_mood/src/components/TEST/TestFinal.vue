@@ -1,5 +1,6 @@
 <template>
   <!-- UI 패널: 이모티콘, 도형, 이미지, 옷, 색상, 포즈, 저장 버튼 등 -->
+
   <div style="position: relative; width: 100%; height: 100%">
     <div
       style="
@@ -22,6 +23,7 @@
       </button>
       <!-- 도형 추가 버튼 -->
       <button @click="addRectangle">도형 추가</button>
+      <button @click="addTextbox">텍스트 추가</button>
       <!-- 기본 이미지 교체 버튼 -->
       <button
         v-for="(img, idx) in predefinedImages"
@@ -104,6 +106,7 @@
       <!-- 캔버스 저장 버튼 -->
       <button @click="saveCanvasAsImage">이미지로 저장</button>
     </div>
+
     <!-- Fabric.js 캔버스 -->
     <canvas
       ref="canvas"
@@ -130,6 +133,7 @@ import {
   controlsUtils,
   loadSVGFromURL,
   Group,
+  IText,
 } from "fabric";
 import image1 from "@/assets/image/Ae.png";
 import image2 from "@/assets/image/Ai.png";
@@ -147,6 +151,28 @@ import drass from "@/assets/image/dress.svg";
 import drassArm from "@/assets/image/dress팔.svg";
 import human from "@/assets/image/인간.svg";
 import humanArm from "@/assets/image/인간팔.svg";
+
+// Vue CLI/webpack용 require.context 사용
+const svgContext = require.context("@/assets/image", false, /\.(svg|png|jpg)$/);
+
+function getImageUrl(filename) {
+  try {
+    return svgContext("./" + filename);
+  } catch {
+    return "";
+  }
+}
+
+import clothesDataRaw from "@/assets/data/clothes.json";
+const clothesData = clothesDataRaw.default || clothesDataRaw;
+const clothesListRaw = clothesData.clothesList || [];
+const clothesList = clothesListRaw.map((item) => ({
+  ...item,
+  icon: getImageUrl(item.icon),
+  svgUrl: Object.fromEntries(
+    Object.entries(item.svgUrl).map(([k, v]) => [k, getImageUrl(v)])
+  ),
+}));
 
 export default {
   data() {
@@ -180,140 +206,34 @@ export default {
         },
       ],
       // 옷 목록 (포즈별 SVG, 위치, 색상 옵션 포함)
-      clothesList: [
-        {
-          name: "드레스",
-          icon: drass,
-          svgUrl: {
-            인간: drass,
-            인간팔: drassArm,
-          },
-          position: {
-            인간: { left: -10, top: 0 },
-            인간팔: { left: 70, top: 0 },
-          },
-          colorButtons: [
-            {
-              label: "핑크/파랑",
-              mainColor: "#ff69b4", // 대표색
-              targets: [
-                { type: "id", value: "dress_body1", color: "#ff69b4" },
-                { type: "id", value: "dress_body2", color: "#ff69b4" },
-                { type: "id", value: "belt", color: "#00bfff" },
-              ],
-            },
-            {
-              label: "핑크/노랑",
-              mainColor: "#ffe066",
-              targets: [
-                { type: "id", value: "dress_body1", color: "#ff69b4" },
-                { type: "id", value: "dress_body2", color: "#ff69b4" },
-                { type: "id", value: "belt", color: "#ffe066" },
-              ],
-            },
-            {
-              label: "노랑/파랑",
-              mainColor: "#00cc44",
-              targets: [
-                { type: "id", value: "dress_body1", color: "#00cc44" },
-                { type: "id", value: "dress_body2", color: "#00cc44" },
-                { type: "id", value: "belt", color: "#00bfff" },
-              ],
-            },
-          ],
-        },
-        {
-          name: "셔츠",
-          icon: shirt,
-          svgUrl: {
-            인간: shirt,
-            인간팔: shirtArm,
-          },
-          position: {
-            인간: { left: -20, top: -30 },
-            인간팔: { left: 60, top: -30 },
-          },
-          colorButtons: [
-            {
-              label: "검정/흰색색",
-              mainColor: "#3E3E3EFF", // 대표색
-              targets: [
-                { type: "id", value: "main", color: "#3E3E3EFF" },
-                { type: "id", value: "collar", color: "#DDDDDDFF" },
-              ],
-            },
-            {
-              label: "주황/초록",
-              mainColor: "#FF6969FF",
-              targets: [
-                { type: "id", value: "main", color: "#FF6969FF" },
-                { type: "id", value: "collar", color: "#66FF87FF" },
-              ],
-            },
-            {
-              label: "보라/노랑",
-              mainColor: "#C2CC00FF",
-              targets: [
-                { type: "id", value: "main", color: "#C2CC00FF" },
-                { type: "id", value: "collar", color: "#5900FFFF" },
-              ],
-            },
-          ],
-        },
-      ],
+      clothesList,
       selectedClothes: null, // 현재 선택된 옷 데이터
       selectedColorIndexes: {}, // { [clothes.name]: index }
     };
   },
   methods: {
-    //상태 저장
-    saveAvatarToLocal() {
-      const data = {
-        currentPose: this.currentPose,
-        selectedClothesName: this.selectedClothes?.name,
-        selectedColorIndexes: this.selectedColorIndexes,
-        // 필요하다면 배경, 추가 이미지 등도 포함
-      };
-
-      localStorage.setItem("avatarOptions", JSON.stringify(data));
-    },
-    // 로컬 스토리지에서 아바타 복원
-    restoreAvatarFromLocal() {
-      this.isRestoring = true;
-      const data = localStorage.getItem("avatarOptions");
-      if (!data) {
-        this.isRestoring = false;
-        return;
-      }
-      const parsed = JSON.parse(data);
-
-      // 1. 색상 인덱스 복원
-      if (parsed.selectedColorIndexes) {
-        this.selectedColorIndexes = parsed.selectedColorIndexes;
-      }
-
-      // 2. 포즈 복원
-      if (parsed.currentPose) this.currentPose = parsed.currentPose;
-
-      // 3. 인간 SVG를 포즈에 맞게 다시 그림
-      this.addHumanSvg();
-
-      // 4. 옷 복원 + 색상 적용
-      if (parsed.selectedClothesName) {
-        const clothes = this.clothesList.find(
-          (c) => c.name === parsed.selectedClothesName
-        );
-        if (clothes) {
-          this.selectClothes(clothes);
-          const idx = parsed.selectedColorIndexes?.[clothes.name] ?? 0;
-          const btn = clothes.colorButtons[idx];
-          if (btn) {
-            this.changeClothesColors(btn.targets, clothes.name, idx);
-          }
+    addTextbox() {
+      const textbox = new IText(
+        "1.캐릭터 회전 &삭제버튼 없애기 2. 캐릭터 움직일때 X-INDEX 수정 3.편집창 와리가리 4. 방문자 카운팅 ",
+        {
+          left: this.canvas.width / 2,
+          top: this.canvas.height / 2,
+          originX: "center",
+          originY: "center",
+          fontSize: 32,
+          fill: "#222",
+          fontFamily: "sans-serif",
+          editable: true,
+          hasControls: false,
+          hasBorders: false,
         }
-      }
-      this.isRestoring = false;
+      );
+      this.addCustomControls(textbox); // 도형과 동일한 커스텀 핸들 적용
+      this.canvas.add(textbox);
+      this.canvas.setActiveObject(textbox);
+      this.canvas.renderAll();
     },
+
     // 포즈에 따라 인간 SVG를 캔버스에 추가
     async addHumanSvg() {
       // 기존 인간 SVG가 있으면 삭제
@@ -391,7 +311,6 @@ export default {
       const btn = clothes.colorButtons[idx];
       if (btn) {
         this.changeClothesColors(btn.targets, clothes.name, idx);
-        this.saveAvatarToLocal();
       }
     },
     // 인간을 움직일 때 옷도 같이 움직이게 이벤트 연결
@@ -445,8 +364,6 @@ export default {
       await this.addHumanSvg();
       if (this.selectedClothes) {
         await this.selectClothes(this.selectedClothes);
-        this.saveAvatarToLocal();
-        this.saveAvatarToLocal();
       }
     },
     // 옷 SVG 색상 변경 (id/class 모두 지원, 재귀 순회)
@@ -478,11 +395,6 @@ export default {
         ...this.selectedColorIndexes,
         [clothesName]: idx,
       };
-
-      // 색상 변경 시에도 저장!
-      if (!this.isRestoring) {
-        this.saveAvatarToLocal();
-      }
     },
 
     // 캔버스 이미지를 파일로 저장 (파일명 입력 가능, 기본값: 오늘기분외계인)
@@ -931,7 +843,6 @@ export default {
   // 컴포넌트 마운트 시 캔버스 초기화
   mounted: async function () {
     await this.initializeCanvas();
-    this.restoreAvatarFromLocal();
   },
 };
 </script>

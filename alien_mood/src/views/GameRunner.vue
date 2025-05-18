@@ -22,7 +22,7 @@
 
     <!-- 탭 내용 -->
     <div>
-      <div v-if="activeTab === 0">
+      <!-- <div v-if="activeTab === 0">
         <h2>Konva</h2>
         <TestKonva></TestKonva>
       </div>
@@ -37,39 +37,46 @@
       <div v-if="activeTab === 3">
         <h2>점 테스트</h2>
         <rotationTest></rotationTest>
-      </div>
-      <div v-if="activeTab === 4">
-        <h2>최종</h2>
+      </div> -->
+      <div v-if="activeTab === 0">
+        <h2>메인</h2>
         <TestFinal></TestFinal>
+      </div>
+      <div v-if="activeTab === 1">
+        <h2>최종 테스트</h2>
+        <MainCanvas></MainCanvas>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import TestKonva from "@/components/TestKonva.vue";
-import TestFabric from "@/components/TestFabric.vue";
-import deleteTest from "@/components/deleteTest.vue";
-import rotationTest from "@/components/rotationTest.vue";
+// import TestKonva from "@/components/TEST/TestKonva.vue";
+// import TestFabric from "@/components/TEST/TestFabric.vue";
+// import deleteTest from "@/components/TEST/deleteTest.vue";
+// import rotationTest from "@/components/TEST/rotationTest.vue";
 import TestFinal from "@/components/TEST/TestFinal.vue";
+import MainCanvas from "@/components/MainCanvas.vue";
 
 export default {
   components: {
-    TestKonva,
-    TestFabric,
-    deleteTest,
-    rotationTest,
+    // TestKonva,
+    // TestFabric,
+    // deleteTest,
+    // rotationTest,
     TestFinal,
+    MainCanvas,
   },
   data() {
     return {
       activeTab: 0, // 현재 활성화된 탭 (0부터 시작)
       tabs: [
-        { name: "Konva" },
-        { name: "Fabric" },
-        { name: "추가 삭제" },
-        { name: "삭제 회전 크기" },
-        { name: "최종" },
+        // { name: "Konva" },
+        // { name: "Fabric" },
+        // { name: "추가 삭제" },
+        // { name: "삭제 회전 크기" },
+        { name: "최종 테스트" },
+        { name: "메인" },
       ],
     };
   },
