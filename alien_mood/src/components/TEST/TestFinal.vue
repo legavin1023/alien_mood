@@ -212,6 +212,116 @@ export default {
     };
   },
   methods: {
+    async addHumanControlLayer() {
+      // 기존 컨트롤 레이어가 있으면 삭제
+      if (this.humanControlLayer) {
+        this.canvas.remove(this.humanControlLayer);
+        this.humanControlLayer = null;
+      }
+      if (!this.humanSvgGroup) return;
+
+      const bounds = this.humanSvgGroup.getBoundingRect();
+      const controlLayer = new Rect({
+        left: this.humanSvgGroup.left,
+        top: this.humanSvgGroup.top,
+        width: bounds.width,
+        height: bounds.height,
+        originX: this.humanSvgGroup.originX,
+        originY: this.humanSvgGroup.originY,
+        fill: "rgba(0,0,0,0)", // 완전 투명
+        selectable: true,
+        evented: true,
+        hasControls: false,
+        hasBorders: false,
+        padding: 20,
+      });
+      this.addCustomControls(controlLayer);
+      this.canvas.add(controlLayer);
+      this.humanControlLayer = controlLayer;
+
+      // 컨트롤 레이어 이동 시 캐릭터/옷 동기화
+      controlLayer.on("moving", () => {
+        this.humanSvgGroup.set({
+          left: controlLayer.left,
+          top: controlLayer.top,
+        });
+        if (this.clothesSvgGroup) {
+          const pos = this.selectedClothes?.position?.[this.currentPose] || {
+            left: 0,
+            top: 0,
+          };
+          this.clothesSvgGroup.set({
+            left: controlLayer.left + pos.left * controlLayer.scaleX,
+            top: controlLayer.top + pos.top * controlLayer.scaleY,
+          });
+        }
+        this.setHumanAndClothesZIndex();
+        this.canvas.renderAll();
+      });
+
+      // 컨트롤 레이어 스케일 시 캐릭터/옷 동기화
+      controlLayer.on("scaling", () => {
+        this.humanSvgGroup.set({
+          scaleX: controlLayer.scaleX,
+          scaleY: controlLayer.scaleY,
+          left: controlLayer.left,
+          top: controlLayer.top,
+        });
+        if (this.clothesSvgGroup) {
+          const pos = this.selectedClothes?.position?.[this.currentPose] || {
+            left: 0,
+            top: 0,
+          };
+          this.clothesSvgGroup.set({
+            scaleX: controlLayer.scaleX,
+            scaleY: controlLayer.scaleY,
+            left: controlLayer.left + pos.left * controlLayer.scaleX,
+            top: controlLayer.top + pos.top * controlLayer.scaleY,
+          });
+        }
+        this.setHumanAndClothesZIndex();
+        this.canvas.renderAll();
+      });
+
+      // ★ 컨트롤 레이어 회전 시 캐릭터/옷 동기화
+      controlLayer.on("rotating", () => {
+        this.humanSvgGroup.set({
+          angle: controlLayer.angle,
+        });
+        if (this.clothesSvgGroup) {
+          this.clothesSvgGroup.set({
+            angle: controlLayer.angle,
+          });
+        }
+        this.setHumanAndClothesZIndex();
+        this.canvas.renderAll();
+      });
+
+      // // 캐릭터와 옷은 직접 선택 불가
+      // this.humanSvgGroup.set({ selectable: false, evented: false });
+      // if (this.clothesSvgGroup) {
+      //   this.clothesSvgGroup.set({ selectable: false, evented: false });
+      // }
+
+      // 항상 z-index 정렬
+      this.setHumanAndClothesZIndex();
+      this.canvas.renderAll();
+    },
+    setHumanAndClothesZIndex() {
+      if (!this.humanSvgGroup) return;
+      const objs = this.canvas.getObjects();
+      // 인간과 옷을 배열에서 제거
+      [this.humanSvgGroup, this.clothesSvgGroup].forEach((obj) => {
+        const idx = objs.indexOf(obj);
+        if (idx > -1) objs.splice(idx, 1);
+      });
+      // 인간을 맨 앞(0번)에 추가
+      objs.unshift(this.humanSvgGroup);
+      // 옷이 있으면 인간 바로 위(1번)에 추가
+      if (this.clothesSvgGroup) objs.splice(1, 0, this.clothesSvgGroup);
+      this.canvas._objects = objs;
+      this.canvas.renderAll();
+    },
     addTextbox() {
       const textbox = new IText(
         "1.캐릭터 회전 &삭제버튼 없애기 2. 캐릭터 움직일때 X-INDEX 수정 3.편집창 와리가리 4. 방문자 카운팅 ",
@@ -266,6 +376,7 @@ export default {
       this.canvas.add(svgGroup);
       this.humanSvgGroup = svgGroup;
       this.addHumanMoveListener();
+      await this.addHumanControlLayer();
       this.canvas.renderAll();
     },
     // 옷 선택 시 캔버스에 추가 (포즈별 SVG/위치 적용)
@@ -312,6 +423,7 @@ export default {
       if (btn) {
         this.changeClothesColors(btn.targets, clothes.name, idx);
       }
+      await this.addHumanControlLayer();
     },
     // 인간을 움직일 때 옷도 같이 움직이게 이벤트 연결
     addHumanMoveListener() {
@@ -365,6 +477,7 @@ export default {
       if (this.selectedClothes) {
         await this.selectClothes(this.selectedClothes);
       }
+      await this.addHumanControlLayer();
     },
     // 옷 SVG 색상 변경 (id/class 모두 지원, 재귀 순회)
     changeClothesColors(targets, clothesName, idx) {
@@ -768,6 +881,7 @@ export default {
       );
       // 인간 SVG 추가
       await this.addHumanSvg();
+      await this.addHumanControlLayer();
       // 기본 이미지 추가
       const img = new window.Image();
       img.src = this.predefinedImages[0];
