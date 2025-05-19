@@ -8,8 +8,8 @@
           "인간팔": "dress팔.svg"
         },
         "position": {
-          "인간": { "left": -10, "top": 0 },
-          "인간팔": { "left": 70, "top": 0 }
+          "인간": { "left": 0, "top": 0 },
+          "인간팔": { "left":0, "top": 0 }
         },
         "colorButtons": [
           {
@@ -49,8 +49,8 @@
           "인간팔": "shirt팔.svg"
         },
         "position": {
-          "인간": { "left": -20, "top": -30 },
-          "인간팔": { "left": 60, "top": -30 }
+          "인간": { "left": 0, "top": 0 },
+          "인간팔": { "left": 0, "top": 0 }
         },
         "colorButtons": [
           {

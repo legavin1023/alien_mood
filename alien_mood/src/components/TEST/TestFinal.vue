@@ -145,10 +145,6 @@ import deleteIcon from "@/assets/image/deleteIcon.png";
 import rotateIcon from "@/assets/image/custom-handle.png";
 import resizeIcon from "@/assets/image/html.png";
 import svgUrl from "@/assets/image/green.svg";
-import shirt from "@/assets/image/shirt.svg";
-import shirtArm from "@/assets/image/shirt팔.svg";
-import drass from "@/assets/image/dress.svg";
-import drassArm from "@/assets/image/dress팔.svg";
 import human from "@/assets/image/인간.svg";
 import humanArm from "@/assets/image/인간팔.svg";
 
@@ -184,7 +180,6 @@ export default {
         { src: image1, label: "에펙" },
         { src: image2, label: "일러" },
         { src: image3, label: "html" },
-        // ...이모티콘 추가
       ],
       defaultImageObject: null, // 교체 가능한 기본 이미지 오브젝트
       currentPose: "인간", // 현재 포즈 상태
@@ -347,7 +342,22 @@ export default {
     // 포즈에 따라 인간 SVG를 캔버스에 추가
     async addHumanSvg() {
       // 기존 인간 SVG가 있으면 삭제
+      let prevLeft = 100;
+      let prevTop = this.canvas.height / 2;
+      let prevOriginX = "center";
+      let prevOriginY = "center";
+      let prevScaleX = 1;
+      let prevScaleY = 1;
+      let prevAngle = 0;
       if (this.humanSvgGroup) {
+        // 기존 중심, 스케일, 각도 기억
+        prevLeft = this.humanSvgGroup.left;
+        prevTop = this.humanSvgGroup.top;
+        prevOriginX = this.humanSvgGroup.originX;
+        prevOriginY = this.humanSvgGroup.originY;
+        prevScaleX = this.humanSvgGroup.scaleX;
+        prevScaleY = this.humanSvgGroup.scaleY;
+        prevAngle = this.humanSvgGroup.angle;
         this.canvas.remove(this.humanSvgGroup);
         this.humanSvgGroup = null;
       }
@@ -355,24 +365,25 @@ export default {
       const loadedSVG = await loadSVGFromURL(humanSvgUrl);
       let svgGroup = util.groupSVGElements(loadedSVG.objects);
       svgGroup.set({
-        left: 100,
-        top: this.canvas.height / 2,
-        originX: "left",
+        left: prevLeft,
+        top: prevTop,
+        originX: "center",
         originY: "center",
+        scaleX: prevScaleX,
+        scaleY: prevScaleY,
+        angle: prevAngle,
         selectable: true,
         evented: true,
-        hasControls: false, // 도형과 동일
-        hasBorders: false, // 도형과 동일
+        hasControls: false,
+        hasBorders: false,
         lockMovementX: false,
         lockMovementY: false,
-        lockScalingX: false, // 크기조절 가능
+        lockScalingX: false,
         lockScalingY: false,
-        lockRotation: false, // 회전 가능
+        lockRotation: false,
       });
 
-      // 도형과 동일하게 커스텀 컨트롤(핸들) 추가
       this.addCustomControls(svgGroup);
-
       this.canvas.add(svgGroup);
       this.humanSvgGroup = svgGroup;
       this.addHumanMoveListener();
@@ -394,13 +405,16 @@ export default {
       // 인간 SVG 기준 + 옷 position 값 더해서 위치/스케일 맞추기
       const human = this.humanSvgGroup;
       const pos = clothes.position?.[this.currentPose] || { left: 0, top: 0 };
+
+      // 옷 그룹을 인간과 완전히 동일하게 맞춤
       svgGroup.set({
-        left: human.left + pos.left,
-        top: human.top + pos.top,
+        left: human.left,
+        top: human.top,
         originX: human.originX,
         originY: human.originY,
         scaleX: human.scaleX,
         scaleY: human.scaleY,
+        angle: human.angle,
         selectable: false,
         evented: false,
         hasControls: false,
@@ -412,6 +426,12 @@ export default {
         lockRotation: true,
       });
 
+      // 옷 내부 오브젝트에만 offset 적용
+      svgGroup.forEachObject((obj) => {
+        obj.left += pos.left;
+        obj.top += pos.top;
+      });
+      svgGroup.setCoords();
       this.canvas.add(svgGroup);
       this.clothesSvgGroup = svgGroup;
       this.selectedClothes = clothes;
