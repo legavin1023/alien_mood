@@ -950,9 +950,24 @@ export default {
           backgroundColor: "#ffffff",
         })
       );
-      // 인간 SVG 추가
-      await this.addHumanSvg();
-      await this.addHumanControlLayer();
+      this.canvas.on("after:render", () => {
+        const ctx = this.canvas.getContext();
+        const objs = this.canvas.getObjects();
+        objs.forEach((obj, idx) => {
+          // 오브젝트의 좌상단 좌표 계산
+          const p = obj.getPointByOrigin
+            ? obj.getPointByOrigin("left", "top")
+            : { x: obj.left, y: obj.top };
+          ctx.save();
+          ctx.font = "bold 18px sans-serif";
+          ctx.fillStyle = "red";
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 3;
+          ctx.strokeText(idx + "", p.x + 8, p.y + 24);
+          ctx.fillText(idx + "", p.x + 8, p.y + 24);
+          ctx.restore();
+        });
+      });
       // 기본 이미지 추가
       const img = new window.Image();
       img.src = this.predefinedImages[0];
@@ -978,11 +993,12 @@ export default {
         this.defaultImageObject = fabricImage;
         this.canvas.renderAll();
       };
+      // 인간 SVG 추가
+      await this.addHumanSvg();
+      await this.addHumanControlLayer();
       // 예시 SVG 추가
       this.addSvgToCanvas();
       // 오브젝트 클릭 시 선택/비선택 처리
-      // ...initializeCanvas 내부...
-      // ...initializeCanvas 내부...
       this.canvas.on("mouse:up", (opt) => {
         const evt = opt.e;
         const target = this.canvas.findTarget(evt, false);
