@@ -250,7 +250,6 @@ export default {
             top: controlLayer.top + pos.top * controlLayer.scaleY,
           });
         }
-        this.setHumanAndClothesZIndex();
         this.canvas.renderAll();
       });
 
@@ -274,7 +273,6 @@ export default {
             top: controlLayer.top + pos.top * controlLayer.scaleY,
           });
         }
-        this.setHumanAndClothesZIndex();
         this.canvas.renderAll();
       });
 
@@ -288,7 +286,6 @@ export default {
             angle: controlLayer.angle,
           });
         }
-        this.setHumanAndClothesZIndex();
         this.canvas.renderAll();
       });
 
@@ -299,24 +296,9 @@ export default {
       // }
 
       // 항상 z-index 정렬
-      this.setHumanAndClothesZIndex();
       this.canvas.renderAll();
     },
-    setHumanAndClothesZIndex() {
-      if (!this.humanSvgGroup) return;
-      const objs = this.canvas.getObjects();
-      // 인간과 옷을 배열에서 제거
-      [this.humanSvgGroup, this.clothesSvgGroup].forEach((obj) => {
-        const idx = objs.indexOf(obj);
-        if (idx > -1) objs.splice(idx, 1);
-      });
-      // 인간을 맨 앞(0번)에 추가
-      objs.unshift(this.humanSvgGroup);
-      // 옷이 있으면 인간 바로 위(1번)에 추가
-      if (this.clothesSvgGroup) objs.splice(1, 0, this.clothesSvgGroup);
-      this.canvas._objects = objs;
-      this.canvas.renderAll();
-    },
+
     addTextbox() {
       const textbox = new IText(
         "1.캐릭터 회전 &삭제버튼 없애기 2. 캐릭터 움직일때 X-INDEX 수정 3.편집창 와리가리 4. 방문자 카운팅 ",
@@ -927,6 +909,7 @@ export default {
       this.addSvgToCanvas();
       // 오브젝트 클릭 시 선택/비선택 처리
       // ...initializeCanvas 내부...
+      // ...initializeCanvas 내부...
       this.canvas.on("mouse:up", (opt) => {
         const evt = opt.e;
         const target = this.canvas.findTarget(evt, false);
@@ -935,27 +918,59 @@ export default {
           this.canvas.setActiveObject(target);
           this.canvas.requestRenderAll();
 
-          // 오브젝트를 맨 위로 올리기 (zIndex 조정)
           const objs = this.canvas.getObjects();
-          const idx = objs.indexOf(target);
-          if (idx > -1 && idx !== objs.length - 1) {
-            objs.splice(idx, 1); // 기존 위치에서 제거
-            objs.push(target); // 맨 뒤(맨 위)로 추가
-          }
 
-          // 인간과 옷의 zIndex를 항상 유지: 인간이 옷보다 아래에 있도록
-          if (this.humanSvgGroup && this.clothesSvgGroup) {
-            // 둘 다 있으면, 인간이 먼저, 옷이 그 위에 오도록 재정렬
-            const hIdx = objs.indexOf(this.humanSvgGroup);
-            const cIdx = objs.indexOf(this.clothesSvgGroup);
-            if (hIdx > -1 && cIdx > -1 && hIdx > cIdx) {
-              // 순서가 잘못됐으면 교체
-              objs.splice(hIdx, 1);
-              objs.splice(cIdx, 0, this.humanSvgGroup);
+          // 기본 이미지는 항상 맨 아래
+          if (this.defaultImageObject) {
+            const idx = objs.indexOf(this.defaultImageObject);
+            if (idx > 0) {
+              objs.splice(idx, 1);
+              objs.unshift(this.defaultImageObject);
             }
           }
 
-          this.canvas._objects = objs; // 내부 배열 동기화 (v6)
+          // 인간과 옷이 모두 있을 때만 처리
+          const hIdx = objs.indexOf(this.humanSvgGroup);
+          const cIdx = objs.indexOf(this.clothesSvgGroup);
+
+          // 1. 인간/옷 클릭 시: 인간+옷을 "함께" 맨 위로 올림(단, 인간이 옷보다 아래)
+          if (
+            target === this.humanSvgGroup ||
+            target === this.clothesSvgGroup
+          ) {
+            // 둘 다 있으면 배열에서 제거
+            if (cIdx > -1) objs.splice(cIdx, 1);
+            if (hIdx > -1) objs.splice(objs.indexOf(this.humanSvgGroup), 1);
+            // 항상 맨 뒤 두 칸에 인간, 옷 추가 (인간이 아래)
+            if (this.humanSvgGroup) objs.push(this.humanSvgGroup);
+            if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
+          }
+          // 2. 다른 오브젝트 클릭 시: 해당 오브젝트만 인간+옷 아래로
+          else {
+            // 해당 오브젝트를 배열에서 제거
+            const idx = objs.indexOf(target);
+            if (idx > -1) objs.splice(idx, 1);
+
+            // 인간+옷이 있다면, 인간의 인덱스에 삽입 (즉, 인간-타겟-옷 순서)
+            let insertIdx = objs.length;
+            if (this.humanSvgGroup && this.clothesSvgGroup) {
+              // 인간이 옷보다 아래에 있도록 보장
+              let hIdx = objs.indexOf(this.humanSvgGroup);
+              let cIdx = objs.indexOf(this.clothesSvgGroup);
+              if (hIdx > -1 && cIdx > -1 && hIdx > cIdx) {
+                objs.splice(hIdx, 1);
+                objs.splice(cIdx, 0, this.humanSvgGroup);
+                hIdx = objs.indexOf(this.humanSvgGroup);
+                cIdx = objs.indexOf(this.clothesSvgGroup);
+              }
+              insertIdx = hIdx;
+            } else if (this.humanSvgGroup) {
+              insertIdx = objs.indexOf(this.humanSvgGroup);
+            }
+            objs.splice(insertIdx, 0, target);
+          }
+
+          this.canvas._objects = objs;
           this.canvas.renderAll();
         } else {
           this.canvas.discardActiveObject();
