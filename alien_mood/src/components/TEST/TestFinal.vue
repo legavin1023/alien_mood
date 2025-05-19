@@ -337,6 +337,9 @@ export default {
         hasControls: false,
       });
 
+      // 텍스트에 배경 참조 저장
+      textbox._bgRect = bgRect;
+
       this.canvas.add(bgRect);
       this.canvas.add(textbox);
 
@@ -701,6 +704,14 @@ export default {
     // 오브젝트 삭제 핸들러
     deleteObject(_eventData, transform) {
       const canvasInstance = transform.target.canvas;
+      // 텍스트에 배경이 연결되어 있으면 같이 삭제
+      if (
+        transform.target.type === "i-text" &&
+        transform.target._bgRect &&
+        canvasInstance.contains(transform.target._bgRect)
+      ) {
+        canvasInstance.remove(transform.target._bgRect);
+      }
       canvasInstance.remove(transform.target);
       canvasInstance.requestRenderAll();
     },
