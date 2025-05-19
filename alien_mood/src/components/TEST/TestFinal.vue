@@ -971,7 +971,7 @@ export default {
       // 기본 이미지 추가
       const img = new window.Image();
       img.src = this.predefinedImages[0];
-      img.onload = () => {
+      img.onload = async () => {
         const fabricImage = new FabricImage(img, {
           left: this.canvas.width / 2,
           top: this.canvas.height / 2,
@@ -992,13 +992,12 @@ export default {
         this.canvas.add(fabricImage);
         this.defaultImageObject = fabricImage;
         this.canvas.renderAll();
+
+        // 기본 이미지가 추가된 후 인간 추가
+        await this.addHumanSvg();
+        await this.addHumanControlLayer();
+        this.addSvgToCanvas();
       };
-      // 인간 SVG 추가
-      await this.addHumanSvg();
-      await this.addHumanControlLayer();
-      // 예시 SVG 추가
-      this.addSvgToCanvas();
-      // 오브젝트 클릭 시 선택/비선택 처리
       this.canvas.on("mouse:up", (opt) => {
         const evt = opt.e;
         const target = this.canvas.findTarget(evt, false);
@@ -1009,6 +1008,7 @@ export default {
 
           // 텍스트(IText)는 z-index 조정하지 않음
           if (target.type === "i-text" || target instanceof IText) {
+            // 텍스트를 클릭한 경우에는 z-index 조정하지 않음
             return;
           }
 
