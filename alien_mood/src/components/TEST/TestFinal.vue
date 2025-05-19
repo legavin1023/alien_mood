@@ -344,8 +344,6 @@ export default {
       // 기존 인간 SVG가 있으면 삭제
       let prevLeft = 100;
       let prevTop = this.canvas.height / 2;
-      let prevOriginX = "center";
-      let prevOriginY = "center";
       let prevScaleX = 1;
       let prevScaleY = 1;
       let prevAngle = 0;
@@ -353,8 +351,6 @@ export default {
         // 기존 중심, 스케일, 각도 기억
         prevLeft = this.humanSvgGroup.left;
         prevTop = this.humanSvgGroup.top;
-        prevOriginX = this.humanSvgGroup.originX;
-        prevOriginY = this.humanSvgGroup.originY;
         prevScaleX = this.humanSvgGroup.scaleX;
         prevScaleY = this.humanSvgGroup.scaleY;
         prevAngle = this.humanSvgGroup.angle;
@@ -930,45 +926,40 @@ export default {
       // 예시 SVG 추가
       this.addSvgToCanvas();
       // 오브젝트 클릭 시 선택/비선택 처리
+      // ...initializeCanvas 내부...
       this.canvas.on("mouse:up", (opt) => {
         const evt = opt.e;
         const target = this.canvas.findTarget(evt, false);
-        // 인간 또는 옷을 클릭하면 둘 다 앞으로!
-        if (
-          target &&
-          target.selectable !== false &&
-          (target === this.humanSvgGroup || target === this.clothesSvgGroup)
-        ) {
-          // 둘 다 앞으로 보내기
-          const objs = this.canvas.getObjects();
-          [this.humanSvgGroup, this.clothesSvgGroup].forEach((obj) => {
-            const idx = objs.indexOf(obj);
-            if (idx > -1) objs.splice(idx, 1);
-          });
-          objs.push(this.humanSvgGroup);
-          if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
-          this.canvas._objects = objs;
-          // ★ 인간을 클릭했으면 인간을 선택 상태로!
-          if (target === this.humanSvgGroup) {
-            this.canvas.setActiveObject(this.humanSvgGroup);
-          } else if (this.clothesSvgGroup) {
-            this.canvas.setActiveObject(this.clothesSvgGroup);
-          }
-          this.canvas.renderAll();
-        }
-        // 그 외 오브젝트는 기존대로
-        else if (target && target.selectable !== false) {
+
+        if (target && target.selectable !== false) {
           this.canvas.setActiveObject(target);
+          this.canvas.requestRenderAll();
+
+          // 오브젝트를 맨 위로 올리기 (zIndex 조정)
           const objs = this.canvas.getObjects();
           const idx = objs.indexOf(target);
           if (idx > -1 && idx !== objs.length - 1) {
-            objs.splice(idx, 1);
-            objs.push(target);
-            this.canvas._objects = objs;
+            objs.splice(idx, 1); // 기존 위치에서 제거
+            objs.push(target); // 맨 뒤(맨 위)로 추가
           }
+
+          // 인간과 옷의 zIndex를 항상 유지: 인간이 옷보다 아래에 있도록
+          if (this.humanSvgGroup && this.clothesSvgGroup) {
+            // 둘 다 있으면, 인간이 먼저, 옷이 그 위에 오도록 재정렬
+            const hIdx = objs.indexOf(this.humanSvgGroup);
+            const cIdx = objs.indexOf(this.clothesSvgGroup);
+            if (hIdx > -1 && cIdx > -1 && hIdx > cIdx) {
+              // 순서가 잘못됐으면 교체
+              objs.splice(hIdx, 1);
+              objs.splice(cIdx, 0, this.humanSvgGroup);
+            }
+          }
+
+          this.canvas._objects = objs; // 내부 배열 동기화 (v6)
           this.canvas.renderAll();
         } else {
           this.canvas.discardActiveObject();
+          this.canvas.requestRenderAll();
           this.canvas.renderAll();
         }
       });
