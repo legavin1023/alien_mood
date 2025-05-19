@@ -300,23 +300,84 @@ export default {
     },
 
     addTextbox() {
-      const textbox = new IText(
-        "1.캐릭터 회전 &삭제버튼 없애기 2. 캐릭터 움직일때 X-INDEX 수정 3.편집창 와리가리 4. 방문자 카운팅 ",
-        {
-          left: this.canvas.width / 2,
-          top: this.canvas.height / 2,
-          originX: "center",
-          originY: "center",
-          fontSize: 32,
-          fill: "#222",
-          fontFamily: "sans-serif",
-          editable: true,
-          hasControls: false,
-          hasBorders: false,
-        }
-      );
-      this.addCustomControls(textbox); // 도형과 동일한 커스텀 핸들 적용
+      const text =
+        "1.캐릭터 삭제버튼 없애기 2. 편집창 와리가리 4. 방문자 카운팅 ";
+      const padding = 24;
+      const textbox = new IText(text, {
+        left: this.canvas.width / 2,
+        top: this.canvas.height / 2,
+        originX: "center",
+        originY: "center",
+        fontSize: 32,
+        fill: "#222",
+        fontFamily: "sans-serif",
+        editable: true,
+        selectable: true,
+        evented: true,
+        hasControls: false,
+        hasBorders: false,
+        backgroundColor: "transparent",
+        textAlign: "center",
+      });
+
+      // 배경 사각형 생성
+      const bgRect = new Rect({
+        left: textbox.left,
+        top: textbox.top,
+        originX: "center",
+        originY: "center",
+        width: textbox.width + padding * 2,
+        height: textbox.height + padding * 2,
+        rx: 18,
+        ry: 18,
+        fill: "#fffbe6",
+        selectable: false,
+        evented: false,
+        hasBorders: false,
+        hasControls: false,
+      });
+
+      this.canvas.add(bgRect);
       this.canvas.add(textbox);
+
+      // 항상 텍스트 바로 아래에 배경이 오도록 순서 조정 함수
+      const ensureBgBelowText = () => {
+        const objs = this.canvas.getObjects();
+        const bgIdx = objs.indexOf(bgRect);
+        const textIdx = objs.indexOf(textbox);
+        if (bgIdx > -1 && textIdx > -1 && bgIdx !== textIdx - 1) {
+          objs.splice(bgIdx, 1);
+          objs.splice(textIdx, 0, bgRect);
+          this.canvas._objects = objs;
+        }
+      };
+
+      // 텍스트 이동/수정/스케일/회전 시 배경도 같이 이동 및 크기 조정
+      const updateBgRect = () => {
+        textbox.setCoords();
+        bgRect.set({
+          width: textbox.width * textbox.scaleX + padding * 2,
+          height: textbox.height * textbox.scaleY + padding * 2,
+          left: textbox.left,
+          top: textbox.top,
+          scaleX: 1,
+          scaleY: 1,
+          angle: textbox.angle,
+        });
+        ensureBgBelowText();
+        this.canvas.requestRenderAll();
+      };
+
+      // 이벤트 연결
+      textbox.on("changed", updateBgRect);
+      textbox.on("scaling", updateBgRect);
+      textbox.on("moving", updateBgRect);
+      textbox.on("rotating", updateBgRect);
+
+      // 최초 위치/순서 보장
+      ensureBgBelowText();
+
+      this.addCustomControls(textbox);
       this.canvas.setActiveObject(textbox);
       this.canvas.renderAll();
     },
@@ -672,7 +733,7 @@ export default {
       obj.controls.rotateControl = new Control({
         x: 0,
         y: -0.5,
-        offsetY: -40, // 경계선(점선)에서 40px 더 위
+        offsetY: -40,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
         cornerSize: 28,
@@ -698,6 +759,7 @@ export default {
         transparentCorners: false,
         hasBorders: false,
         hasControls: false,
+        // editable: true, // ← 이 줄은 필요 없음!
       });
 
       obj.on("selected", () => {
@@ -917,6 +979,11 @@ export default {
         if (target && target.selectable !== false) {
           this.canvas.setActiveObject(target);
           this.canvas.requestRenderAll();
+
+          // 텍스트(IText)는 z-index 조정하지 않음
+          if (target.type === "i-text" || target instanceof IText) {
+            return;
+          }
 
           const objs = this.canvas.getObjects();
 
