@@ -22,6 +22,10 @@
 
     <!-- 탭 내용 -->
     <div>
+      <div>
+        <h2>방문자 수</h2>
+        <VisitorCounter></VisitorCounter>
+      </div>
       <!-- <div v-if="activeTab === 0">
         <h2>Konva</h2>
         <TestKonva></TestKonva>
@@ -57,7 +61,7 @@
 // import rotationTest from "@/components/TEST/rotationTest.vue";
 import TestFinal from "@/components/TEST/TestFinal.vue";
 import MainCanvas from "@/components/MainCanvas.vue";
-
+import VisitorCounter from "@/components/VisitorCounter.vue";
 export default {
   components: {
     // TestKonva,
@@ -66,6 +70,7 @@ export default {
     // rotationTest,
     TestFinal,
     MainCanvas,
+    VisitorCounter,
   },
   data() {
     return {

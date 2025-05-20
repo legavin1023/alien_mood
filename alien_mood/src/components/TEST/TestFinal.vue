@@ -518,6 +518,7 @@ export default {
     // 캔버스 이미지를 파일로 저장 (파일명 입력 가능, 기본값: 오늘기분외계인)
     saveCanvasAsImage() {
       let filename = prompt("저장할 파일 이름을 입력하세요.", "오늘기분외계인");
+      if (filename === null) return; // 취소 시 저장하지 않음
       if (!filename || filename.trim() === "") {
         filename = "오늘기분외계인";
       }
@@ -863,7 +864,7 @@ export default {
     },
     // 텍스트 추가
     addTextbox() {
-      const text = "1.편집창 와리가리 2. 방문자 카운팅 ";
+      const text = "1.방문자 카운팅 ";
       const padding = 24;
       const textbox = new IText(text, {
         left: this.canvas.width / 2,
