@@ -223,7 +223,8 @@ export default {
         height: bounds.height,
         originX: this.humanSvgGroup.originX,
         originY: this.humanSvgGroup.originY,
-        fill: "rgba(0,0,0,0)", // 완전 투명
+        // fill: "rgba(0,0,0,0)", // 완전 투명
+        fill: "rgba(0,0,255,0.2)", // 디버깅용: 파란 반투명
         selectable: true,
         evented: true,
         hasControls: false,
@@ -296,92 +297,6 @@ export default {
       // }
 
       // 항상 z-index 정렬
-      this.canvas.renderAll();
-    },
-
-    addTextbox() {
-      const text =
-        "1.캐릭터 삭제버튼 없애기 2. 편집창 와리가리 4. 방문자 카운팅 ";
-      const padding = 24;
-      const textbox = new IText(text, {
-        left: this.canvas.width / 2,
-        top: this.canvas.height / 2,
-        originX: "center",
-        originY: "center",
-        fontSize: 32,
-        fill: "#222",
-        fontFamily: "sans-serif",
-        editable: true,
-        selectable: true,
-        evented: true,
-        hasControls: false,
-        hasBorders: false,
-        backgroundColor: "transparent",
-        textAlign: "center",
-      });
-
-      // 배경 사각형 생성
-      const bgRect = new Rect({
-        left: textbox.left,
-        top: textbox.top,
-        originX: "center",
-        originY: "center",
-        width: textbox.width + padding * 2,
-        height: textbox.height + padding * 2,
-        rx: 18,
-        ry: 18,
-        fill: "#fffbe6",
-        selectable: false,
-        evented: false,
-        hasBorders: false,
-        hasControls: false,
-      });
-
-      // 텍스트에 배경 참조 저장
-      textbox._bgRect = bgRect;
-
-      this.canvas.add(bgRect);
-      this.canvas.add(textbox);
-
-      // 항상 텍스트 바로 아래에 배경이 오도록 순서 조정 함수
-      const ensureBgBelowText = () => {
-        const objs = this.canvas.getObjects();
-        const bgIdx = objs.indexOf(bgRect);
-        const textIdx = objs.indexOf(textbox);
-        if (bgIdx > -1 && textIdx > -1 && bgIdx !== textIdx - 1) {
-          objs.splice(bgIdx, 1);
-          objs.splice(textIdx, 0, bgRect);
-          this.canvas._objects = objs;
-        }
-      };
-
-      // 텍스트 이동/수정/스케일/회전 시 배경도 같이 이동 및 크기 조정
-      const updateBgRect = () => {
-        textbox.setCoords();
-        bgRect.set({
-          width: textbox.width * textbox.scaleX + padding * 2,
-          height: textbox.height * textbox.scaleY + padding * 2,
-          left: textbox.left,
-          top: textbox.top,
-          scaleX: 1,
-          scaleY: 1,
-          angle: textbox.angle,
-        });
-        ensureBgBelowText();
-        this.canvas.requestRenderAll();
-      };
-
-      // 이벤트 연결
-      textbox.on("changed", updateBgRect);
-      textbox.on("scaling", updateBgRect);
-      textbox.on("moving", updateBgRect);
-      textbox.on("rotating", updateBgRect);
-
-      // 최초 위치/순서 보장
-      ensureBgBelowText();
-
-      this.addCustomControls(textbox);
-      this.canvas.setActiveObject(textbox);
       this.canvas.renderAll();
     },
 
@@ -833,6 +748,93 @@ export default {
       this.canvas.setActiveObject(rect);
       this.canvas.renderAll();
     },
+    // 텍스트 추가
+    addTextbox() {
+      const text =
+        "1.캐릭터 삭제버튼 없애기 2. 편집창 와리가리 4. 방문자 카운팅 ";
+      const padding = 24;
+      const textbox = new IText(text, {
+        left: this.canvas.width / 2,
+        top: this.canvas.height / 2,
+        originX: "center",
+        originY: "center",
+        fontSize: 32,
+        fill: "#222",
+        fontFamily: "sans-serif",
+        editable: true,
+        selectable: true,
+        evented: true,
+        hasControls: false,
+        hasBorders: false,
+        backgroundColor: "transparent",
+        textAlign: "center",
+      });
+
+      // 배경 사각형 생성
+      const bgRect = new Rect({
+        left: textbox.left,
+        top: textbox.top,
+        originX: "center",
+        originY: "center",
+        width: textbox.width + padding * 2,
+        height: textbox.height + padding * 2,
+        rx: 18,
+        ry: 18,
+        fill: "#fffbe6",
+        selectable: false,
+        evented: false,
+        hasBorders: false,
+        hasControls: false,
+      });
+
+      // 텍스트에 배경 참조 저장
+      textbox._bgRect = bgRect;
+
+      this.canvas.add(bgRect);
+      this.canvas.add(textbox);
+
+      // 항상 텍스트 바로 아래에 배경이 오도록 순서 조정 함수
+      const ensureBgBelowText = () => {
+        const objs = this.canvas.getObjects();
+        const bgIdx = objs.indexOf(bgRect);
+        const textIdx = objs.indexOf(textbox);
+        if (bgIdx > -1 && textIdx > -1 && bgIdx !== textIdx - 1) {
+          objs.splice(bgIdx, 1);
+          objs.splice(textIdx, 0, bgRect);
+          this.canvas._objects = objs;
+        }
+      };
+
+      // 텍스트 이동/수정/스케일/회전 시 배경도 같이 이동 및 크기 조정
+      const updateBgRect = () => {
+        textbox.setCoords();
+        bgRect.set({
+          width: textbox.width * textbox.scaleX + padding * 2,
+          height: textbox.height * textbox.scaleY + padding * 2,
+          left: textbox.left,
+          top: textbox.top,
+          scaleX: 1,
+          scaleY: 1,
+          angle: textbox.angle,
+        });
+        ensureBgBelowText();
+        this.canvas.requestRenderAll();
+      };
+
+      // 이벤트 연결
+      textbox.on("changed", updateBgRect);
+      textbox.on("scaling", updateBgRect);
+      textbox.on("moving", updateBgRect);
+      textbox.on("rotating", updateBgRect);
+
+      // 최초 위치/순서 보장
+      ensureBgBelowText();
+
+      this.addCustomControls(textbox);
+      this.canvas.setActiveObject(textbox);
+      this.canvas.renderAll();
+    },
+
     // 이미지 추가 (최대 3개)
     addImage(imageSrc) {
       const img = new window.Image();
@@ -998,79 +1000,76 @@ export default {
         await this.addHumanControlLayer();
         this.addSvgToCanvas();
       };
-      this.canvas.on("mouse:up", (opt) => {
-        const evt = opt.e;
-        const target = this.canvas.findTarget(evt, false);
 
-        if (target && target.selectable !== false) {
-          this.canvas.setActiveObject(target);
-          this.canvas.requestRenderAll();
+      // mouse:up 이벤트는 한 번만 등록!
+      this.canvas.on("mouse:down", (opt) => {
+        const target = this.canvas.getActiveObject();
+        const objs = this.canvas.getObjects();
 
-          // 텍스트(IText)는 z-index 조정하지 않음
-          if (target.type === "i-text" || target instanceof IText) {
-            // 텍스트를 클릭한 경우에는 z-index 조정하지 않음
-            return;
+        // 1. 기본 이미지는 항상 맨 아래
+        if (this.defaultImageObject) {
+          const idx = objs.indexOf(this.defaultImageObject);
+          if (idx > -1) {
+            objs.splice(idx, 1);
+            objs.unshift(this.defaultImageObject);
           }
+        }
 
-          const objs = this.canvas.getObjects();
-
-          // 기본 이미지는 항상 맨 아래
-          if (this.defaultImageObject) {
-            const idx = objs.indexOf(this.defaultImageObject);
-            if (idx > 0) {
-              objs.splice(idx, 1);
-              objs.unshift(this.defaultImageObject);
-            }
-          }
-
-          // 인간과 옷이 모두 있을 때만 처리
-          const hIdx = objs.indexOf(this.humanSvgGroup);
-          const cIdx = objs.indexOf(this.clothesSvgGroup);
-
-          // 1. 인간/옷 클릭 시: 인간+옷을 "함께" 맨 위로 올림(단, 인간이 옷보다 아래)
-          if (
-            target === this.humanSvgGroup ||
-            target === this.clothesSvgGroup
-          ) {
-            // 둘 다 있으면 배열에서 제거
-            if (cIdx > -1) objs.splice(cIdx, 1);
-            if (hIdx > -1) objs.splice(objs.indexOf(this.humanSvgGroup), 1);
-            // 항상 맨 뒤 두 칸에 인간, 옷 추가 (인간이 아래)
-            if (this.humanSvgGroup) objs.push(this.humanSvgGroup);
-            if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
-          }
-          // 2. 다른 오브젝트 클릭 시: 해당 오브젝트만 인간+옷 아래로
-          else {
-            // 해당 오브젝트를 배열에서 제거
-            const idx = objs.indexOf(target);
+        // 캐릭터(인간 SVG 그룹)만 클릭 시 셋을 동시에 맨 위로!
+        if (target === this.humanSvgGroup) {
+          [
+            this.humanSvgGroup,
+            this.humanControlLayer,
+            this.clothesSvgGroup,
+          ].forEach((obj) => {
+            const idx = objs.indexOf(obj);
             if (idx > -1) objs.splice(idx, 1);
-
-            // 인간+옷이 있다면, 인간의 인덱스에 삽입 (즉, 인간-타겟-옷 순서)
-            let insertIdx = objs.length;
-            if (this.humanSvgGroup && this.clothesSvgGroup) {
-              // 인간이 옷보다 아래에 있도록 보장
-              let hIdx = objs.indexOf(this.humanSvgGroup);
-              let cIdx = objs.indexOf(this.clothesSvgGroup);
-              if (hIdx > -1 && cIdx > -1 && hIdx > cIdx) {
-                objs.splice(hIdx, 1);
-                objs.splice(cIdx, 0, this.humanSvgGroup);
-                hIdx = objs.indexOf(this.humanSvgGroup);
-                cIdx = objs.indexOf(this.clothesSvgGroup);
-              }
-              insertIdx = hIdx;
-            } else if (this.humanSvgGroup) {
-              insertIdx = objs.indexOf(this.humanSvgGroup);
-            }
-            objs.splice(insertIdx, 0, target);
-          }
+          });
+          if (this.humanSvgGroup) objs.push(this.humanSvgGroup);
+          if (this.humanControlLayer) objs.push(this.humanControlLayer);
+          if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
 
           this.canvas._objects = objs;
           this.canvas.renderAll();
-        } else {
-          this.canvas.discardActiveObject();
-          this.canvas.requestRenderAll();
-          this.canvas.renderAll();
+          return;
         }
+        // 2. 캐릭터 3종 중 하나라도 클릭하면 셋을 동시에 맨 위로!
+        const isHumanPart = [
+          this.humanControlLayer,
+          this.humanSvgGroup,
+          this.clothesSvgGroup,
+        ].includes(target);
+
+        if (isHumanPart) {
+          [
+            this.humanSvgGroup,
+            this.humanControlLayer,
+            this.clothesSvgGroup,
+          ].forEach((obj) => {
+            const idx = objs.indexOf(obj);
+            if (idx > -1) objs.splice(idx, 1);
+          });
+          if (this.humanSvgGroup) objs.push(this.humanSvgGroup);
+          if (this.humanControlLayer) objs.push(this.humanControlLayer);
+          if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
+        } else if (
+          target &&
+          ![
+            this.humanControlLayer,
+            this.humanSvgGroup,
+            this.clothesSvgGroup,
+            this.defaultImageObject,
+          ].includes(target)
+        ) {
+          const idx = objs.indexOf(target);
+          if (idx > -1) {
+            objs.splice(idx, 1);
+            objs.push(target);
+          }
+        }
+
+        this.canvas._objects = objs;
+        this.canvas.renderAll();
       });
     },
   },
