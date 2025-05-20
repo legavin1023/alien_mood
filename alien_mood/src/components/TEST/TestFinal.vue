@@ -223,15 +223,15 @@ export default {
         height: bounds.height,
         originX: this.humanSvgGroup.originX,
         originY: this.humanSvgGroup.originY,
-        // fill: "rgba(0,0,0,0)", // 완전 투명
-        fill: "rgba(0,0,255,0.2)", // 디버깅용: 파란 반투명
+        fill: "rgba(0,0,0,0)", // 완전 투명
+        // fill: "rgba(0,0,255,0.2)", // 디버깅용: 파란 반투명
         selectable: true,
         evented: true,
         hasControls: false,
         hasBorders: false,
         padding: 20,
       });
-      this.addCustomControls(controlLayer);
+      this.addCharacterControls(controlLayer);
       this.canvas.add(controlLayer);
       this.humanControlLayer = controlLayer;
 
@@ -340,7 +340,7 @@ export default {
         lockRotation: false,
       });
 
-      this.addCustomControls(svgGroup);
+      this.addCharacterControls(svgGroup);
       this.canvas.add(svgGroup);
       this.humanSvgGroup = svgGroup;
       this.addHumanMoveListener();
@@ -451,6 +451,7 @@ export default {
       if (this.humanSvgGroup) this.canvas.remove(this.humanSvgGroup);
       if (this.clothesSvgGroup) this.canvas.remove(this.clothesSvgGroup);
       await this.addHumanSvg();
+      this.addCharacterControls(this.humanSvgGroup);
       if (this.selectedClothes) {
         await this.selectClothes(this.selectedClothes);
       }
@@ -629,6 +630,91 @@ export default {
       }
       canvasInstance.remove(transform.target);
       canvasInstance.requestRenderAll();
+    },
+    addCharacterControls(obj) {
+      if (obj.controls.deleteControl) delete obj.controls.deleteControl;
+      obj.setControlsVisibility({
+        tl: false,
+        tr: false,
+        bl: false,
+        br: false,
+        mt: false,
+        mb: false,
+        ml: false,
+        mr: false,
+        mtr: true, // 회전 핸들
+        deleteControl: false, // 삭제 버튼 없음
+        rotateControl: true, // 커스텀 회전
+        resizeControl: true, // 커스텀 리사이즈
+      });
+
+      obj.controls.rotateControl = new Control({
+        x: 0,
+        y: -0.5,
+        offsetY: -40,
+        cursorStyle: "crosshair",
+        render: this.renderRotateIcon,
+        cornerSize: 28,
+        actionHandler: controlsUtils.rotationWithSnapping,
+        hitbox: { width: 60, height: 60 },
+      });
+      obj.controls.resizeControl = new Control({
+        x: 0.5,
+        y: 0.5,
+        cursorStyle: "se-resize",
+        render: this.renderResizeIcon,
+        cornerSize: 28,
+        actionHandler: controlsUtils.scalingEqually,
+        hitbox: { width: 60, height: 60 },
+      });
+
+      obj.set({
+        cornerColor: "#00000000",
+        cornerSize: 18,
+        cornerStyle: "circle",
+        borderColor: "#00bfff",
+        borderDashArray: [6, 4],
+        transparentCorners: false,
+        hasBorders: false,
+        hasControls: false,
+      });
+
+      obj.on("selected", () => {
+        obj.set({ hasBorders: true, hasControls: true });
+        obj.setControlsVisibility({
+          tl: false,
+          tr: false,
+          bl: false,
+          br: false,
+          mt: false,
+          mb: false,
+          ml: false,
+          mr: false,
+          mtr: true,
+          deleteControl: false, // 삭제 버튼 없음
+          rotateControl: true,
+          resizeControl: true,
+        });
+        obj.canvas.requestRenderAll();
+      });
+      obj.on("deselected", () => {
+        obj.set({ hasBorders: false, hasControls: false });
+        obj.setControlsVisibility({
+          tl: false,
+          tr: false,
+          bl: false,
+          br: false,
+          mt: false,
+          mb: false,
+          ml: false,
+          mr: false,
+          mtr: true,
+          deleteControl: false, // 삭제 버튼 없음
+          rotateControl: true,
+          resizeControl: true,
+        });
+        obj.canvas.requestRenderAll();
+      });
     },
     // 커스텀 컨트롤 추가
     addCustomControls(obj) {
