@@ -39,11 +39,11 @@
         <rotationTest></rotationTest>
       </div> -->
       <div v-if="activeTab === 0">
-        <h2>메인</h2>
+        <h2>최종 테스트</h2>
         <TestFinal></TestFinal>
       </div>
       <div v-if="activeTab === 1">
-        <h2>최종 테스트</h2>
+        <h2>메인</h2>
         <MainCanvas></MainCanvas>
       </div>
     </div>

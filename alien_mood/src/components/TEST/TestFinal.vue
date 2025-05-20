@@ -1,120 +1,124 @@
 <template>
-  <!-- UI 패널: 이모티콘, 도형, 이미지, 옷, 색상, 포즈, 저장 버튼 등 -->
-
   <div style="position: relative; width: 100%; height: 100%">
-    <div
-      style="
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 1000;
-        display: flex;
-        gap: 10px;
-      "
-    >
-      <!-- 이모티콘 추가 버튼 -->
-      <button
-        v-for="img in additionalImages"
-        :key="img.src"
-        @click="addImage(img.src)"
-        style="background: none; border: none; cursor: pointer"
-      >
-        <img :src="img.src" :alt="img.label" width="32" height="32" />
-      </button>
-      <!-- 도형 추가 버튼 -->
-      <button @click="addRectangle">도형 추가</button>
-      <button @click="addTextbox">텍스트 추가</button>
-      <!-- 기본 이미지 교체 버튼 -->
-      <button
-        v-for="(img, idx) in predefinedImages"
-        :key="'replace-img-' + idx"
-        @click="replaceDefaultImage(img)"
-      >
-        기본 이미지 변경 {{ idx + 1 }}
-      </button>
-      <!-- 파일 첨부 버튼 -->
-      <button @click="triggerFileInput">이미지 첨부</button>
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/*"
-        style="display: none"
-        @change="onFileChange"
-      />
-      <!-- SVG 색상 변경 버튼 (예시) -->
-      <div>
-        <button
-          v-for="(btn, idx) in colorButtonList"
-          :key="btn.label + idx"
-          @click="changeSvgColorsByIds(btn.colors)"
-        >
-          {{ btn.label }}
-        </button>
-      </div>
-      <!-- 옷 종류별 아이콘 버튼 -->
-      <div style="display: flex; gap: 8px">
-        <button
-          v-for="clothes in clothesList"
-          :key="clothes.name"
-          @click="selectClothes(clothes)"
-          style="background: none; border: none; cursor: pointer"
-        >
-          <img :src="clothes.icon" :alt="clothes.name" width="48" height="48" />
-          <div>{{ clothes.name }}</div>
-        </button>
-      </div>
-      <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
-      <div v-if="selectedClothes" style="margin: 12px 0">
-        <button
-          v-for="(btn, idx) in selectedClothes.colorButtons"
-          :key="btn.label + idx"
-          @click="changeClothesColors(btn.targets, selectedClothes.name, idx)"
-          style="display: flex; align-items: center; gap: 8px"
-        >
-          <span
-            v-if="btn.mainColor"
-            :style="{
-              display: 'inline-block',
-              width: '18px',
-              height: '18px',
-              borderRadius: '50%',
-              background: btn.mainColor,
-              border: '1px solid #aaa',
-            }"
-          ></span>
-          {{ btn.label }}
-        </button>
-      </div>
-      <!-- 포즈 선택 버튼 -->
-      <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <button
-          v-for="pose in ['인간', '인간팔']"
-          :key="pose"
-          :style="{
-            background: currentPose === pose ? '#00bfff' : '#eee',
-            color: currentPose === pose ? '#fff' : '#333',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            padding: '6px 16px',
-            cursor: 'pointer',
-          }"
-          @click="changePose(pose)"
-        >
-          {{ pose }}
-        </button>
-      </div>
-      <!-- 캔버스 저장 버튼 -->
-      <button @click="saveCanvasAsImage">이미지로 저장</button>
-    </div>
-
     <!-- Fabric.js 캔버스 -->
     <canvas
       ref="canvas"
       style="border: 1px solid #ccc; width: 100%; height: 100%"
     ></canvas>
+
+    <!-- 하단 패널 -->
+    <div
+      class="edit-panel"
+      :class="{ open: panelOpen }"
+      @touchstart="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+    >
+      <div class="panel-handle" @click="togglePanel"></div>
+      <div class="panel-content">
+        <!-- 기존 버튼 UI를 이 안에 모두 넣으세요 -->
+        <!-- 이모티콘 추가 버튼 -->
+        <button
+          v-for="img in additionalImages"
+          :key="img.src"
+          @click="addImage(img.src)"
+          style="background: none; border: none; cursor: pointer"
+        >
+          <img :src="img.src" :alt="img.label" width="32" height="32" />
+        </button>
+        <!-- 도형 추가 버튼 -->
+        <button @click="addRectangle">도형 추가</button>
+        <button @click="addTextbox">텍스트 추가</button>
+        <!-- 기본 이미지 교체 버튼 -->
+        <button
+          v-for="(img, idx) in predefinedImages"
+          :key="'replace-img-' + idx"
+          @click="replaceDefaultImage(img)"
+        >
+          기본 이미지 변경 {{ idx + 1 }}
+        </button>
+        <!-- 파일 첨부 버튼 -->
+        <button @click="triggerFileInput">이미지 첨부</button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          style="display: none"
+          @change="onFileChange"
+        />
+        <!-- SVG 색상 변경 버튼 (예시) -->
+        <div>
+          <button
+            v-for="(btn, idx) in colorButtonList"
+            :key="btn.label + idx"
+            @click="changeSvgColorsByIds(btn.colors)"
+          >
+            {{ btn.label }}
+          </button>
+        </div>
+        <!-- 옷 종류별 아이콘 버튼 -->
+        <div style="display: flex; gap: 8px">
+          <button
+            v-for="clothes in clothesList"
+            :key="clothes.name"
+            @click="selectClothes(clothes)"
+            style="background: none; border: none; cursor: pointer"
+          >
+            <img
+              :src="clothes.icon"
+              :alt="clothes.name"
+              width="48"
+              height="48"
+            />
+            <div>{{ clothes.name }}</div>
+          </button>
+        </div>
+        <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
+        <div v-if="selectedClothes" style="margin: 12px 0">
+          <button
+            v-for="(btn, idx) in selectedClothes.colorButtons"
+            :key="btn.label + idx"
+            @click="changeClothesColors(btn.targets, selectedClothes.name, idx)"
+            style="display: flex; align-items: center; gap: 8px"
+          >
+            <span
+              v-if="btn.mainColor"
+              :style="{
+                display: 'inline-block',
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                background: btn.mainColor,
+                border: '1px solid #aaa',
+              }"
+            ></span>
+            {{ btn.label }}
+          </button>
+        </div>
+        <!-- 포즈 선택 버튼 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px">
+          <button
+            v-for="pose in ['인간', '인간팔']"
+            :key="pose"
+            :style="{
+              background: currentPose === pose ? '#00bfff' : '#eee',
+              color: currentPose === pose ? '#fff' : '#333',
+              border: '1px solid #ccc',
+              borderRadius: '6px',
+              padding: '6px 16px',
+              cursor: 'pointer',
+            }"
+            @click="changePose(pose)"
+          >
+            {{ pose }}
+          </button>
+        </div>
+        <!-- 캔버스 저장 버튼 -->
+        <button @click="saveCanvasAsImage">이미지로 저장</button>
+      </div>
+    </div>
   </div>
 </template>
-
 <script>
 // 이미지, SVG 등 리소스 import
 const req = require.context("@/assets/image", false, /\.png$/);
@@ -204,9 +208,32 @@ export default {
       clothesList,
       selectedClothes: null, // 현재 선택된 옷 데이터
       selectedColorIndexes: {}, // { [clothes.name]: index }
+      //아래 변수들은 터치패널을 위한 변수들
+      panelOpen: false,
+      touchStartY: 0,
+      touchMoveY: 0,
     };
   },
   methods: {
+    togglePanel() {
+      this.panelOpen = !this.panelOpen;
+    },
+    onTouchStart(e) {
+      this.touchStartY = e.touches[0].clientY;
+    },
+    onTouchMove(e) {
+      this.touchMoveY = e.touches[0].clientY;
+    },
+    onTouchEnd() {
+      const delta = this.touchStartY - this.touchMoveY;
+      if (delta > 30) {
+        // 위로 드래그: 열기
+        this.panelOpen = true;
+      } else if (delta < -30) {
+        // 아래로 드래그: 닫기
+        this.panelOpen = false;
+      }
+    },
     async addHumanControlLayer() {
       // 기존 컨트롤 레이어가 있으면 삭제
       if (this.humanControlLayer) {
@@ -836,8 +863,7 @@ export default {
     },
     // 텍스트 추가
     addTextbox() {
-      const text =
-        "1.캐릭터 삭제버튼 없애기 2. 편집창 와리가리 4. 방문자 카운팅 ";
+      const text = "1.편집창 와리가리 2. 방문자 카운팅 ";
       const padding = 24;
       const textbox = new IText(text, {
         left: this.canvas.width / 2,
@@ -1183,8 +1209,37 @@ export default {
 };
 </script>
 
-<style>
-canvas {
-  display: block;
+<style scoped>
+.edit-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60px; /* 닫힌 상태 */
+  background: #fff;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2000;
+  overflow: hidden;
+  touch-action: none;
+}
+.edit-panel.open {
+  height: 40vh; /* 열린 상태 */
+}
+.panel-handle {
+  width: 48px;
+  height: 6px;
+  background: #ccc;
+  border-radius: 3px;
+  margin: 10px auto 12px auto;
+  cursor: pointer;
+  touch-action: none;
+}
+.panel-content {
+  padding: 0 16px 16px 16px;
+  overflow-y: auto;
+  height: calc(60vh - 32px);
 }
 </style>
