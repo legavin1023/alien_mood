@@ -1033,6 +1033,23 @@ export default {
           this.canvas.renderAll();
           return;
         }
+
+        // 텍스트(IText) 클릭 시 배경과 텍스트를 같이 맨 위로!
+        if (target && target.type === "i-text" && target._bgRect) {
+          // 둘 다 배열에서 제거
+          [target._bgRect, target].forEach((obj) => {
+            const idx = objs.indexOf(obj);
+            if (idx > -1) objs.splice(idx, 1);
+          });
+          // 반드시 배경 → 텍스트 순서로 push
+          objs.push(target._bgRect);
+          objs.push(target);
+
+          this.canvas._objects = objs;
+          this.canvas.renderAll();
+          return;
+        }
+
         // 2. 캐릭터 3종 중 하나라도 클릭하면 셋을 동시에 맨 위로!
         const isHumanPart = [
           this.humanControlLayer,
