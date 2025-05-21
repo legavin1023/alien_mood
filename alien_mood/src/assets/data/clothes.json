@@ -2,10 +2,10 @@
     "clothesList": [
       {
         "name": "드레스",
-        "icon": "dress.svg",
+        "icon": "clothes/dress.svg",
         "svgUrl": {
-          "인간": "dress.svg",
-          "인간팔": "dress팔.svg"
+          "인간": "clothes/dress.svg",
+          "인간팔": "clothes/dress팔.svg"
         },
         "position": {
           "인간": { "left": 0, "top": 0 },
@@ -43,10 +43,10 @@
       },
       {
         "name": "셔츠",
-        "icon": "shirt.svg",
+        "icon": "clothes/shirt.svg",
         "svgUrl": {
-          "인간": "shirt.svg",
-          "인간팔": "shirt팔.svg"
+          "인간": "clothes/shirt.svg",
+          "인간팔": "clothes/shirt팔.svg"
         },
         "position": {
           "인간": { "left": 0, "top": 0 },

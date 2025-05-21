@@ -16,10 +16,9 @@
     >
       <div class="panel-handle" @click="togglePanel"></div>
       <div class="panel-content">
-        <!-- 기존 버튼 UI를 이 안에 모두 넣으세요 -->
         <!-- 이모티콘 추가 버튼 -->
         <button
-          v-for="img in additionalImages"
+          v-for="img in StickerList"
           :key="img.src"
           @click="addImage(img.src)"
           style="background: none; border: none; cursor: pointer"
@@ -31,11 +30,11 @@
         <button @click="addTextbox">텍스트 추가</button>
         <!-- 기본 이미지 교체 버튼 -->
         <button
-          v-for="(img, idx) in predefinedImages"
+          v-for="(img, idx) in backroundList"
           :key="'replace-img-' + idx"
-          @click="replaceDefaultImage(img)"
+          @click="replaceDefaultImage(img.src)"
         >
-          기본 이미지 변경 {{ idx + 1 }}
+          배경 이미지 변경 {{ idx + 1 }}
         </button>
         <!-- 파일 첨부 버튼 -->
         <button @click="triggerFileInput">이미지 첨부</button>
@@ -139,21 +138,18 @@ import {
   Group,
   IText,
 } from "fabric";
-import image1 from "@/assets/image/Ae.png";
-import image2 from "@/assets/image/Ai.png";
-import image3 from "@/assets/image/css.png";
-import image4 from "@/assets/image/다가오는솔라스 (1).jpg";
-import image5 from "@/assets/image/다가오는솔라스 (2).jpg";
-import image6 from "@/assets/image/다가오는솔라스 (4).jpg";
-import deleteIcon from "@/assets/image/deleteIcon.png";
-import rotateIcon from "@/assets/image/custom-handle.png";
-import resizeIcon from "@/assets/image/html.png";
-import svgUrl from "@/assets/image/green.svg";
+
+import image4 from "@/assets/image/backround/다가오는솔라스 (1).jpg";
+import image5 from "@/assets/image/backround/다가오는솔라스 (2).jpg";
+import image6 from "@/assets/image/backround/다가오는솔라스 (4).jpg";
+import deleteIcon from "@/assets/image/ui/deleteIcon.png";
+import rotateIcon from "@/assets/image/ui/cached.svg";
+import resizeIcon from "@/assets/image/ui/open_in_full.svg";
 import human from "@/assets/image/인간.svg";
 import humanArm from "@/assets/image/인간팔.svg";
 
 // Vue CLI/webpack용 require.context 사용
-const svgContext = require.context("@/assets/image", false, /\.(svg|png|jpg)$/);
+const svgContext = require.context("@/assets/image", true, /\.(svg|png|jpg)$/);
 
 function getImageUrl(filename) {
   try {
@@ -162,6 +158,19 @@ function getImageUrl(filename) {
     return "";
   }
 }
+
+import backroundDataRaw from "@/assets/data/backround.json";
+const backroundList = (backroundDataRaw.default || backroundDataRaw).map(
+  (item) => ({
+    ...item,
+    src: getImageUrl(item.src),
+  })
+);
+import stickerDataRaw from "@/assets/data/sticker.json";
+const StickerList = (stickerDataRaw.default || stickerDataRaw).map((item) => ({
+  ...item,
+  src: getImageUrl(item.src),
+}));
 
 import clothesDataRaw from "@/assets/data/clothes.json";
 const clothesData = clothesDataRaw.default || clothesDataRaw;
@@ -177,37 +186,24 @@ const clothesList = clothesListRaw.map((item) => ({
 export default {
   data() {
     return {
-      canvas: null, // Fabric.js 캔버스 인스턴스
-      isRestoring: false, // 복원 중 여부
-      predefinedImages: [image4, image5, image6], // 기본 이미지 목록
-      additionalImages: [
-        { src: image1, label: "에펙" },
-        { src: image2, label: "일러" },
-        { src: image3, label: "html" },
-      ],
-      defaultImageObject: null, // 교체 가능한 기본 이미지 오브젝트
-      currentPose: "인간", // 현재 포즈 상태
-      colorButtonList: [
-        // SVG 색상 변경용 버튼 예시
-        {
-          label: "핑크색",
-          colors: [
-            { id: "green_1", color: "#ff0055" },
-            { id: "green_2", color: "#00bfff" },
-          ],
-        },
-        {
-          label: "초록색",
-          colors: [
-            { id: "green_1", color: "#00cc44" },
-            { id: "green_2", color: "#ffe066" },
-          ],
-        },
-      ],
+      // Fabric.js 캔버스 인스턴스
+      canvas: null,
+      // 복원 중 여부
+      isRestoring: false,
+      // 배경 이미지 목록
+      backroundList,
+      // 교체 가능한 기본 이미지 오브젝트
+      defaultImageObject: null,
+      // 현재 포즈 상태
+      currentPose: "인간",
+      //스티커 목록
+      StickerList,
       // 옷 목록 (포즈별 SVG, 위치, 색상 옵션 포함)
       clothesList,
-      selectedClothes: null, // 현재 선택된 옷 데이터
-      selectedColorIndexes: {}, // { [clothes.name]: index }
+      // 현재 선택된 옷 데이터
+      selectedClothes: null,
+      // { [clothes.name]: index }
+      selectedColorIndexes: {},
       //아래 변수들은 터치패널을 위한 변수들
       panelOpen: false,
       touchStartY: 0,
@@ -545,48 +541,6 @@ export default {
             obj.set("fill", color);
           }
         });
-      });
-      this.canvas.requestRenderAll();
-    },
-    // 일반 SVG 추가 (예시)
-    async addSvgToCanvas() {
-      const loadedSVG = await loadSVGFromURL(svgUrl);
-      let svgGroup = util.groupSVGElements(loadedSVG.objects);
-      let bounds = svgGroup.getBoundingRect();
-      let svgWidth = bounds.width;
-      let svgHeight = bounds.height;
-      if (!svgWidth || !svgHeight) {
-        svgWidth = loadedSVG.options.width || 200;
-        svgHeight = loadedSVG.options.height || 200;
-      }
-      const canvasWidth = this.canvas.width;
-      const canvasHeight = this.canvas.height;
-      const scale = Math.min(
-        (canvasWidth * 0.5) / svgWidth,
-        (canvasHeight * 0.5) / svgHeight,
-        1
-      );
-      svgGroup.set({
-        left: 100,
-        top: 100,
-        originX: "center",
-        originY: "center",
-        scaleX: scale,
-        scaleY: scale,
-        selectable: true,
-        evented: true,
-      });
-      this.addCustomControls(svgGroup);
-      this.canvas.add(svgGroup);
-      this.canvas.setActiveObject(svgGroup);
-      this.svgGroup = svgGroup;
-      this.canvas.renderAll();
-    },
-    // 일반 SVG 전체 색상 변경 (예시)
-    changeSvgColor(color) {
-      if (!this.svgGroup) return;
-      this.svgGroup.forEachObject((obj) => {
-        if (obj.set) obj.set("fill", color);
       });
       this.canvas.requestRenderAll();
     },
@@ -1085,7 +1039,7 @@ export default {
       });
       // 기본 이미지 추가
       const img = new window.Image();
-      img.src = this.predefinedImages[0];
+      img.src = this.backroundList[0].src;
       img.onload = async () => {
         const fabricImage = new FabricImage(img, {
           left: this.canvas.width / 2,
@@ -1111,7 +1065,6 @@ export default {
         // 기본 이미지가 추가된 후 인간 추가
         await this.addHumanSvg();
         await this.addHumanControlLayer();
-        this.addSvgToCanvas();
       };
 
       // mouse:up 이벤트는 한 번만 등록!
