@@ -119,9 +119,6 @@
   </div>
 </template>
 <script>
-<<<<<<< HEAD
-import { markRaw } from "vue";
-=======
 // 이미지, SVG 등 리소스 import
 const req = require.context("@/assets/image", false, /\.png$/);
 const additionalImages = req.keys().map((key, idx) => ({
@@ -130,7 +127,6 @@ const additionalImages = req.keys().map((key, idx) => ({
 }));
 
 import { ref, onMounted, markRaw } from "vue";
->>>>>>> my-recovered-branch
 import {
   Canvas,
   Rect,
@@ -140,19 +136,6 @@ import {
   controlsUtils,
   loadSVGFromURL,
   Group,
-<<<<<<< HEAD
-} from "fabric";
-import image1 from "@/assets/image/Ae.png";
-import image2 from "@/assets/image/Ai.png";
-import image3 from "@/assets/image/css.png";
-import image4 from "@/assets/image/다가오는솔라스 (1).jpg";
-import image5 from "@/assets/image/다가오는솔라스 (2).jpg";
-import image6 from "@/assets/image/다가오는솔라스 (4).jpg";
-import deleteIcon from "@/assets/image/deleteIcon.png";
-import rotateIcon from "@/assets/image/custom-handle.png";
-import resizeIcon from "@/assets/image/html.png";
-import svgUrl from "@/assets/image/green.svg";
-=======
   IText,
 } from "fabric";
 
@@ -199,7 +182,6 @@ const clothesList = clothesListRaw.map((item) => ({
     Object.entries(item.svgUrl).map(([k, v]) => [k, getImageUrl(v)])
   ),
 }));
->>>>>>> my-recovered-branch
 
 export default {
   data() {
@@ -928,13 +910,6 @@ export default {
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => {
-<<<<<<< HEAD
-        const targetWidth = 300;
-        const targetHeight = 300;
-        const scaleX = targetWidth / img.width;
-        const scaleY = targetHeight / img.height;
-
-=======
         let width = img.width;
         let height = img.height;
         // 가로가 400px을 넘으면 비율 유지하며 축소
@@ -943,7 +918,6 @@ export default {
           width = 400;
           height = height * scale;
         }
->>>>>>> my-recovered-branch
         const fabricImage = new FabricImage(img, {
           left: this.canvas.width / 2,
           top: this.canvas.height / 2,
@@ -1038,122 +1012,9 @@ export default {
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
-<<<<<<< HEAD
-    onFileChange(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new window.Image();
-          img.src = e.target.result;
-          img.onload = () => {
-            const fabricImage = new FabricImage(img, {
-              left: this.canvas.width / 2,
-              top: this.canvas.height / 2,
-              originX: "center",
-              originY: "center",
-              scaleX: 0.5,
-              scaleY: 0.5,
-              padding: 16,
-              selectable: true,
-              evented: true,
-              hasControls: false,
-              hasBorders: false,
-            });
-            this.addCustomControls(fabricImage);
-            this.canvas.add(fabricImage);
-            this.canvas.setActiveObject(fabricImage);
-            this.canvas.renderAll();
-          };
-        };
-        reader.readAsDataURL(file);
-      });
-    },
-    animate(obj) {
-      obj.animate(
-        { angle: 360 },
-        {
-          duration: 3000,
-          onComplete: () => {
-            obj.set("angle", 0);
-            this.animate(obj);
-          },
-          easing: (t, b, c, d) => (c * t) / d + b,
-        }
-      );
-    },
-    addSvgMatrixToCanvas() {
-      loadSVGFromURL(svgUrl, (objects, options) => {
-        const baseSvg = new Group(objects, {
-          ...options,
-          originX: "center",
-          originY: "center",
-          selectable: true,
-          evented: true,
-          hasControls: false,
-          hasBorders: false,
-          padding: 16,
-        });
 
-        // SVG 원본 크기
-        const bounds = baseSvg.getBoundingRect();
-        const svgWidth = bounds.width;
-        const svgHeight = bounds.height;
-
-        // 행렬 정보
-        const colCount = 5;
-        const rowCount = 3;
-        const margin = 40;
-
-        // 전체 SVG 행렬의 크기
-        const totalWidth = svgWidth * colCount + margin * (colCount - 1);
-        const totalHeight = svgHeight * rowCount + margin * (rowCount - 1);
-
-        // 캔버스 크기에 맞게 scale 계산 (90% 영역에 맞춤)
-        const scaleX = (this.canvas.width * 0.9) / totalWidth;
-        const scaleY = (this.canvas.height * 0.9) / totalHeight;
-        const scale = Math.min(scaleX, scaleY);
-
-        // scale 적용된 SVG 크기
-        const scaledSvgWidth = svgWidth * scale;
-        const scaledSvgHeight = svgHeight * scale;
-        const scaledMargin = margin * scale;
-
-        // 중앙 배치 좌표
-        const matrixWidth =
-          scaledSvgWidth * colCount + scaledMargin * (colCount - 1);
-        const matrixHeight =
-          scaledSvgHeight * rowCount + scaledMargin * (rowCount - 1);
-        const startX =
-          this.canvas.width / 2 - matrixWidth / 2 + scaledSvgWidth / 2;
-        const startY =
-          this.canvas.height / 2 - matrixHeight / 2 + scaledSvgHeight / 2;
-
-        // SVG 행렬로 복제 및 배치
-        for (let i = 0; i < rowCount; i++) {
-          for (let j = 0; j < colCount; j++) {
-            baseSvg.clone((clone) => {
-              clone.set({
-                left: startX + j * (scaledSvgWidth + scaledMargin),
-                top: startY + i * (scaledSvgHeight + scaledMargin),
-                scaleX: scale,
-                scaleY: scale,
-              });
-              this.addCustomControls(clone);
-              this.canvas.add(clone);
-              this.animate(clone);
-            });
-          }
-        }
-        this.canvas.renderAll();
-      });
-    },
-    initializeCanvas() {
-=======
     // 캔버스 초기화 및 기본 오브젝트 추가
     async initializeCanvas() {
->>>>>>> my-recovered-branch
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
           width: window.innerWidth,
@@ -1210,25 +1071,6 @@ export default {
         await this.addHumanControlLayer();
       };
 
-<<<<<<< HEAD
-      // SVG 여러 개를 캔버스에 바로 추가
-      this.addSvgMatrixToCanvas();
-
-      // 클릭 시 바로 선택 상태로 & zIndex 조정
-      this.canvas.on("mouse:up", (opt) => {
-        const evt = opt.e;
-        const target = this.canvas.findTarget(evt, false);
-        if (target && target.selectable !== false) {
-          this.canvas.setActiveObject(target);
-
-          // 오브젝트를 맨 위로 올리기 (zIndex 조정)
-          const objs = this.canvas.getObjects();
-          const idx = objs.indexOf(target);
-          if (idx > -1 && idx !== objs.length - 1) {
-            objs.splice(idx, 1);
-            objs.push(target);
-            this.canvas._objects = objs;
-=======
       // mouse:up 이벤트는 한 번만 등록!
       this.canvas.on("mouse:down", (opt) => {
         const target = this.canvas.getActiveObject();
@@ -1240,7 +1082,6 @@ export default {
           if (idx > -1) {
             objs.splice(idx, 1);
             objs.unshift(this.defaultImageObject);
->>>>>>> my-recovered-branch
           }
         }
 
