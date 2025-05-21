@@ -1,0 +1,84 @@
+{
+    "clothesList": [
+      {
+        "name": "드레스",
+        "icon": "clothes/dress.svg",
+        "svgUrl": {
+          "인간": "clothes/dress.svg",
+          "인간팔": "clothes/dress팔.svg"
+        },
+        "position": {
+          "인간": { "left": 0, "top": 0 },
+          "인간팔": { "left":0, "top": 0 }
+        },
+        "colorButtons": [
+          {
+            "label": "핑크/파랑",
+            "mainColor": "#ff69b4",
+            "targets": [
+              { "type": "id", "value": "dress_body1", "color": "#ff69b4" },
+              { "type": "id", "value": "dress_body2", "color": "#ff69b4" },
+              { "type": "id", "value": "belt", "color": "#00bfff" }
+            ]
+          },
+          {
+            "label": "핑크/노랑",
+            "mainColor": "#ffe066",
+            "targets": [
+              { "type": "id", "value": "dress_body1", "color": "#ff69b4" },
+              { "type": "id", "value": "dress_body2", "color": "#ff69b4" },
+              { "type": "id", "value": "belt", "color": "#ffe066" }
+            ]
+          },
+          {
+            "label": "노랑/파랑",
+            "mainColor": "#00cc44",
+            "targets": [
+              { "type": "id", "value": "dress_body1", "color": "#00cc44" },
+              { "type": "id", "value": "dress_body2", "color": "#00cc44" },
+              { "type": "id", "value": "belt", "color": "#00bfff" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "셔츠",
+        "icon": "clothes/shirt.svg",
+        "svgUrl": {
+          "인간": "clothes/shirt.svg",
+          "인간팔": "clothes/shirt팔.svg"
+        },
+        "position": {
+          "인간": { "left": 0, "top": 0 },
+          "인간팔": { "left": 0, "top": 0 }
+        },
+        "colorButtons": [
+          {
+            "label": "검정/흰색",
+            "mainColor": "#3E3E3EFF",
+            "targets": [
+              { "type": "id", "value": "main", "color": "#3E3E3EFF" },
+              { "type": "id", "value": "collar", "color": "#DDDDDDFF" }
+            ]
+          },
+          {
+            "label": "주황/초록",
+            "mainColor": "#FF6969FF",
+            "targets": [
+              { "type": "id", "value": "main", "color": "#FF6969FF" },
+              { "type": "id", "value": "collar", "color": "#66FF87FF" }
+            ]
+          },
+          {
+            "label": "보라/노랑",
+            "mainColor": "#C2CC00FF",
+            "targets": [
+              { "type": "id", "value": "main", "color": "#C2CC00FF" },
+              { "type": "id", "value": "collar", "color": "#5900FFFF" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  
