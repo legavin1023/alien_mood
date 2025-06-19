@@ -1,8 +1,7 @@
-<style></style>
 <template>
-  <div>
+  <div ref="contentArea" class="mobile-wrapper h-[full]">
     <!-- 탭 버튼 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 20px">
+    <!-- <div style="display: flex; gap: 10px; margin-bottom: 20px">
       <button
         v-for="(tab, index) in tabs"
         :key="index"
@@ -18,15 +17,11 @@
       >
         {{ tab.name }}
       </button>
-    </div>
+    </div> -->
 
     <!-- 탭 내용 -->
-    <div>
-      <div>
-        <h2>방문자 수</h2>
-        <VisitorCounter></VisitorCounter>
-      </div>
-      <!-- <div v-if="activeTab === 0">
+    <!-- <div>
+      <div v-if="activeTab === 0">
         <h2>Konva</h2>
         <TestKonva></TestKonva>
       </div>
@@ -41,16 +36,14 @@
       <div v-if="activeTab === 3">
         <h2>점 테스트</h2>
         <rotationTest></rotationTest>
-      </div> -->
-      <div v-if="activeTab === 0">
-        <h2>최종 테스트</h2>
-        <TestFinal></TestFinal>
       </div>
       <div v-if="activeTab === 1">
-        <h2>메인</h2>
-        <MainCanvas></MainCanvas>
+        <TestFinal></TestFinal>
       </div>
-    </div>
+      <div v-if="activeTab === 0"></div>
+    </div> -->
+    <CanvasUI></CanvasUI>
+    <MainCanvas></MainCanvas>
   </div>
 </template>
 
@@ -61,16 +54,16 @@
 // import rotationTest from "@/components/TEST/rotationTest.vue";
 import TestFinal from "@/components/TEST/TestFinal.vue";
 import MainCanvas from "@/components/MainCanvas.vue";
-import VisitorCounter from "@/components/VisitorCounter.vue";
+import CanvasUI from "@/components/CanvasUI.vue";
 export default {
   components: {
     // TestKonva,
     // TestFabric,
     // deleteTest,
     // rotationTest,
-    TestFinal,
+    // TestFinal,
     MainCanvas,
-    VisitorCounter,
+    CanvasUI,
   },
   data() {
     return {
@@ -80,14 +73,50 @@ export default {
         // { name: "Fabric" },
         // { name: "추가 삭제" },
         // { name: "삭제 회전 크기" },
-        { name: "최종 테스트" },
-        { name: "메인" },
+        // { name: "메인" },
+        // { name: "최종 테스트" },
       ],
+      vhRaf: null,
+      lastVh: 0,
     };
+  },
+  mounted() {
+    this.setRealViewportHeight();
+    window.addEventListener("resize", this.setRealViewportHeight);
+    window.addEventListener("orientationchange", this.setRealViewportHeight);
+    window.addEventListener("scroll", this.setRealViewportHeight, {
+      passive: true,
+    });
+    this.startVhPolling();
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.setRealViewportHeight);
+    window.removeEventListener("orientationchange", this.setRealViewportHeight);
+    window.removeEventListener("scroll", this.setRealViewportHeight);
+    cancelAnimationFrame(this.vhRaf);
+  },
+  methods: {
+    setRealViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+      const content = this.$refs.contentArea;
+      if (content) {
+        content.style.height = `calc(var(--vh, 1vh) * 100)`;
+      }
+      this.lastVh = vh;
+    },
+    startVhPolling() {
+      const check = () => {
+        const vh = window.innerHeight * 0.01;
+        if (vh !== this.lastVh) {
+          this.setRealViewportHeight();
+        }
+        this.vhRaf = requestAnimationFrame(check);
+      };
+      this.vhRaf = requestAnimationFrame(check);
+    },
   },
 };
 </script>
 
-<style>
-/* 추가적인 스타일이 필요하면 여기에 작성하세요 */
-</style>
+<style></style>

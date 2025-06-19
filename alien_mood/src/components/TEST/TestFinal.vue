@@ -1,6 +1,11 @@
 <template>
   <div style="position: relative; width: 100%; height: 100%">
     <!-- Fabric.js 캔버스 -->
+
+    <div>
+      <h2>방문자 수</h2>
+      <VisitorCounter></VisitorCounter>
+    </div>
     <canvas
       ref="canvas"
       style="border: 1px solid #ccc; width: 100%; height: 100%"
@@ -147,6 +152,7 @@ import rotateIcon from "@/assets/image/ui/cached.svg";
 import resizeIcon from "@/assets/image/ui/open_in_full.svg";
 import human from "@/assets/image/인간.svg";
 import humanArm from "@/assets/image/인간팔.svg";
+import VisitorCounter from "@/components/VisitorCounter.vue";
 
 // Vue CLI/webpack용 require.context 사용
 const svgContext = require.context("@/assets/image", true, /\.(svg|png|jpg)$/);
@@ -209,6 +215,9 @@ export default {
       touchStartY: 0,
       touchMoveY: 0,
     };
+  },
+  components: {
+    VisitorCounter,
   },
   methods: {
     togglePanel() {

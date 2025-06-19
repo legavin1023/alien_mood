@@ -1,0 +1,32 @@
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+@font-face {
+  font-family: 'Uiyeun';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105@1.1/Uiyeun.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+*{
+  font-family: 'Uiyeun', sans-serif;
+  font-size: 20pt;
+}
+body{
+  background: #212124;
+  height: 100vh;
+  overflow: hidden;
+}
+.mobile-wrapper {
+    max-width: 430px; /* 아이폰 14 Pro 기준, 필요시 조정 */
+    margin: 0 auto;
+    box-sizing: border-box;
+    height: calc(var(--vh, 1vh) * 100);
+    overflow: hidden;
+  }
+  @media (max-width: 430px) {
+    .mobile-wrapper {
+      width: 100vw;
+      /* min-height: 100vh; */
+    }
+  }
