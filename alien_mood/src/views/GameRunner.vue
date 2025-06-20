@@ -42,8 +42,8 @@
       </div>
       <div v-if="activeTab === 0"></div>
     </div> -->
-    <CanvasUI></CanvasUI>
-    <MainCanvas></MainCanvas>
+    <CanvasUI ref="child"></CanvasUI>
+    <!-- <MainCanvas ref="child"></MainCanvas> -->
   </div>
 </template>
 
@@ -62,7 +62,7 @@ export default {
     // deleteTest,
     // rotationTest,
     // TestFinal,
-    MainCanvas,
+    // MainCanvas,
     CanvasUI,
   },
   data() {
@@ -81,6 +81,12 @@ export default {
     };
   },
   mounted() {
+    // this.setResponsiveFont();
+    // window.addEventListener("resize", this.setResponsiveFont);
+    this.$nextTick(() => {
+      this.correctFontSize();
+    });
+
     this.setRealViewportHeight();
     window.addEventListener("resize", this.setRealViewportHeight);
     window.addEventListener("orientationchange", this.setRealViewportHeight);
@@ -90,12 +96,50 @@ export default {
     this.startVhPolling();
   },
   beforeUnmount() {
+    window.removeEventListener("resize", this.setResponsiveFont);
+
     window.removeEventListener("resize", this.setRealViewportHeight);
     window.removeEventListener("orientationchange", this.setRealViewportHeight);
     window.removeEventListener("scroll", this.setRealViewportHeight);
     cancelAnimationFrame(this.vhRaf);
   },
   methods: {
+    correctFontSize() {
+      // 자식 요소 선택
+      const child = this.$refs.child;
+      if (!child || !(child instanceof Element)) return;
+
+      // 부모의 실제 font-size(px) 구하기
+      const parent = child.parentElement;
+      const parentFontSize = parseFloat(
+        window.getComputedStyle(parent).fontSize
+      );
+
+      // body의 기본 font-size(px) 구하기
+      const bodyFontSize = parseFloat(
+        window.getComputedStyle(document.body).fontSize
+      );
+
+      // 보정 비율 계산
+      const scale = bodyFontSize / parentFontSize;
+
+      // 자식에 보정된 font-size 적용
+      const childFontSize = parseFloat(window.getComputedStyle(child).fontSize);
+      child.style.fontSize = `${childFontSize * scale}px`;
+    },
+    // setResponsiveFont() {
+    //   // body의 현재 font-size(px) 가져오기
+    //   const body = document.body;
+    //   const style = window.getComputedStyle(body);
+    //   const currentSize = parseFloat(style.fontSize); // px 단위
+
+    //   // 1.6배 하고 소수점은 반내림
+    //   const newSize = Math.floor(currentSize * 1.6);
+
+    //   // body에 적용
+    //   body.style.fontSize = `${newSize}px`;
+    // },
+
     setRealViewportHeight() {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty("--vh", `${vh}px`);

@@ -8,14 +8,13 @@
   font-weight: normal;
   font-style: normal;
 }
-*{
-  font-family: 'Uiyeun', sans-serif;
-  font-size: 20pt;
-}
+
 body{
-  background: #212124;
+  background: #000000;
   height: 100vh;
   overflow: hidden;
+  font-family: 'Uiyeun';
+
 }
 .mobile-wrapper {
     max-width: 430px; /* 아이폰 14 Pro 기준, 필요시 조정 */

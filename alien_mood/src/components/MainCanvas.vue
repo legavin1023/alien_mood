@@ -1,14 +1,211 @@
 <template>
   <div
-    class="mobile-wrapper relative bg-white max-w-[430px] mx-auto min-h-screen"
+    class="mobile-wrapper relative bg-white max-w-[430px] mx-auto min-h-screen select-none"
   >
     <canvas
       ref="canvas"
       style="border: 1px solid #ccc; width: 100%; height: 100%"
     ></canvas>
+
+    <!-- 패널: 네비 위에서 바닥에 딱 붙어서 열림 -->
+    <div
+      class="edit-panel z-0 fixed pt-[28px] left-1/2 bottom-0 rounded-t-[28px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 flex flex-col transition-all duration-300"
+      :style="{
+        height: panelOpen ? '282px' : '1000px',
+        transform: panelOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)', // 닫힐 때 아래로 내려감
+        overflow: panelOpen ? 'visible' : 'hidden',
+      }"
+      @touchstart="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+    >
+      <div
+        class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
+        @click="togglePanel"
+      ></div>
+      <div
+        class="panel-content w-full h-full px-[30px] pb-[12px] flex-1 min-h-0 overflow-y-auto"
+        :style="{ overflowY: panelOpen ? 'auto' : 'hidden' }"
+      >
+        <!-- 탭별 내용 -->
+        <div v-if="activePanelTab === 0" class="h-full px-[30px]">
+          <div
+            class="flex flex-wrap gap-[15px] h-full pb-[56px] custom-scrollbar-hide"
+            style="box-sizing: border-box"
+          >
+            <div
+              v-for="(img, idx) in backroundList"
+              :key="'replace-img-' + idx"
+              class="flex-shrink-0 bg-red-50"
+              :style="{
+                width: 'calc((100% - 30px) / 3)', // (전체 - 2*15px gap) / 3
+              }"
+            >
+              <button
+                @click="replaceDefaultImage(img.src)"
+                class="w-full h-full aspect-square overflow-hidden"
+                style="padding: 0"
+              >
+                <img
+                  :src="img.src"
+                  :alt="'배경 ' + (idx + 1)"
+                  class="w-full h-full object-cover"
+                  draggable="false"
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="activePanelTab === 1">
+          <div class="avatar-panel">
+            <!-- 탭 네비게이션 -->
+            <div
+              class="flex gap-[34px] h-[32px] leading-[18px] text-[18px] border-b-[1px] border-black-b200"
+            >
+              <button
+                v-for="(tab, idx) in avatarTabs"
+                :key="tab"
+                :class="[
+                  'flex-1 py-2',
+                  activeAvatarTab === idx
+                    ? 'text-blue-500 border-b-2 border-blue-500'
+                    : 'text-gray-500',
+                ]"
+                @click="activeAvatarTab = idx"
+              >
+                {{ tab }}
+              </button>
+            </div>
+            <!-- 탭별 내용 -->
+            <div class="avatar-tab-content">
+              <div v-if="activeAvatarTab === 0">
+                <!-- 자세(포즈) 관련 내용 -->
+                <p>자세(포즈) 선택 영역</p>
+                <!-- 포즈 선택 버튼 -->
+                <div style="display: flex; gap: 8px">
+                  <button
+                    v-for="pose in ['인간', '인간팔']"
+                    :key="pose"
+                    :style="{
+                      background: currentPose === pose ? '#00bfff' : '#eee',
+                      color: currentPose === pose ? '#fff' : '#333',
+                      border: '1px solid #ccc',
+                      borderRadius: '6px',
+                      padding: '6px 16px',
+                      cursor: 'pointer',
+                    }"
+                    @click="changePose(pose)"
+                  >
+                    {{ pose }}
+                  </button>
+                </div>
+              </div>
+              <div v-else-if="activeAvatarTab === 1">
+                <!-- 얼굴형 관련 내용 -->
+                <p>얼굴형 선택 영역</p>
+              </div>
+              <div v-else-if="activeAvatarTab === 2">
+                <!-- 머리 관련 내용 -->
+                <p>머리 선택 영역</p>
+              </div>
+              <div v-else-if="activeAvatarTab === 3">
+                <!-- 눈 관련 내용 -->
+                <p>눈 선택 영역</p>
+              </div>
+              <div v-else-if="activeAvatarTab === 4">
+                <!-- 입 관련 내용 -->
+                <p>입 선택 영역</p>
+              </div>
+              <div v-else-if="activeAvatarTab === 5">
+                <!-- 옷/색상/포즈 등 -->
+                <!-- 옷 종류별 아이콘 버튼 -->
+                <div style="display: flex; gap: 8px">
+                  <button
+                    v-for="clothes in clothesList"
+                    :key="clothes.name"
+                    @click="selectClothes(clothes)"
+                    style="background: none; border: none; cursor: pointer"
+                  >
+                    <img
+                      :src="clothes.icon"
+                      :alt="clothes.name"
+                      width="48"
+                      height="48"
+                    />
+                    <div>{{ clothes.name }}</div>
+                  </button>
+                </div>
+                <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
+                <div v-if="selectedClothes" style="margin: 12px 0">
+                  <button
+                    v-for="(btn, idx) in selectedClothes.colorButtons"
+                    :key="btn.label + idx"
+                    @click="
+                      changeClothesColors(
+                        btn.targets,
+                        selectedClothes.name,
+                        idx
+                      )
+                    "
+                    style="display: flex; align-items: center; gap: 8px"
+                  >
+                    <span
+                      v-if="btn.mainColor"
+                      :style="{
+                        display: 'inline-block',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: btn.mainColor,
+                        border: '1px solid #aaa',
+                      }"
+                    ></span>
+                    {{ btn.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="activePanelTab === 2">
+          <div
+            class="w-full h-[32px] text-center border-b text-black-b70 border-black-b600"
+          >
+            <span>{{ imageCount }}/3</span>
+          </div>
+          <label
+            class="w-[90px] h-[90px] bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
+          >
+            <span style="color: #888">이미지 첨부</span>
+            <input
+              type="file"
+              accept="image/*"
+              @change="onFileChange"
+              style="display: none"
+            />
+          </label>
+        </div>
+        <div v-else-if="activePanelTab === 3">
+          <button @click="addTextbox">텍스트 추가</button>
+        </div>
+        <div v-else-if="activePanelTab === 4"></div>
+        <div v-else-if="activePanelTab === 5">
+          <!-- 이모티콘 추가 버튼 -->
+          <button
+            v-for="img in StickerList"
+            :key="img.src"
+            @click="addImage(img.src)"
+            style="background: none; border: none; cursor: pointer"
+          >
+            <img :src="img.src" :alt="img.label" width="32" height="32" />
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- 네비게이션 바: 항상 하단 고정, 패널과 넓이 동일 -->
     <div
-      class="panel-nav z-50 fixed left-1/2 bottom-0 flex justify-around items-center h-[48px] bg-black-b900/90 w-full max-w-[430px] -translate-x-1/2"
+      class="panel-nav z-100 text-[20px] fixed left-1/2 bottom-0 flex justify-around items-center h-[48px] bg-black-b900/90 w-full max-w-[430px] -translate-x-1/2"
     >
       <button
         v-for="(tab, idx) in [
@@ -24,130 +221,10 @@
           'flex-1 h-full',
           activePanelTab === idx ? 'text-green-300 ' : 'text-black-b100',
         ]"
-        @click="activePanelTab = idx"
+        @click="openPanel(idx)"
       >
         {{ tab }}
       </button>
-    </div>
-    <!-- 패널: 네비 위에서 바닥에 딱 붙어서 열림 -->
-    <div
-      class="edit-panel fixed left-1/2 z-40 pt-[34px] rounded-t-[18px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 text-black-b20 flex flex-col transition-all duration-300"
-      :style="{
-        bottom: '0px',
-        height: panelOpen ? '282px' : '100px',
-        transform: 'translate(-50%, 0)',
-        overflow: panelOpen ? 'visible' : 'hidden',
-      }"
-      @touchstart="onTouchStart"
-      @touchmove="onTouchMove"
-      @touchend="onTouchEnd"
-    >
-      <div
-        class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
-        @click="togglePanel"
-      ></div>
-      <div
-        class="panel-content px-[30px] py-[28px] flex-1 overflow-y-auto"
-        :style="{ overflowY: panelOpen ? 'auto' : 'hidden' }"
-      >
-        <!-- 탭별 내용 -->
-        <div v-if="activePanelTab === 0">
-          <!-- 배경 이미지 교체 -->
-          <button
-            v-for="(img, idx) in backroundList"
-            :key="'replace-img-' + idx"
-            @click="replaceDefaultImage(img.src)"
-          >
-            배경 이미지 변경 {{ idx + 1 }}
-          </button>
-          <button @click="triggerFileInput">이미지 첨부</button>
-          <input
-            ref="fileInput"
-            type="file"
-            accept="image/*"
-            style="display: none"
-            @change="onFileChange"
-          />
-        </div>
-        <div v-else-if="activePanelTab === 1">
-          <!-- 도형/텍스트 추가 -->
-          <button @click="addRectangle">도형 추가</button>
-          <button @click="addTextbox">텍스트 추가</button>
-        </div>
-        <div v-else-if="activePanelTab === 2">
-          <!-- 이모티콘 추가 버튼 -->
-          <button
-            v-for="img in StickerList"
-            :key="img.src"
-            @click="addImage(img.src)"
-            style="background: none; border: none; cursor: pointer"
-          >
-            <img :src="img.src" :alt="img.label" width="32" height="32" />
-          </button>
-        </div>
-        <div v-else-if="activePanelTab === 3">
-          <!-- 옷/색상/포즈 등 -->
-          <!-- 옷 종류별 아이콘 버튼 -->
-          <div style="display: flex; gap: 8px">
-            <button
-              v-for="clothes in clothesList"
-              :key="clothes.name"
-              @click="selectClothes(clothes)"
-              style="background: none; border: none; cursor: pointer"
-            >
-              <img
-                :src="clothes.icon"
-                :alt="clothes.name"
-                width="48"
-                height="48"
-              />
-              <div>{{ clothes.name }}</div>
-            </button>
-          </div>
-          <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
-          <div v-if="selectedClothes" style="margin: 12px 0">
-            <button
-              v-for="(btn, idx) in selectedClothes.colorButtons"
-              :key="btn.label + idx"
-              @click="
-                changeClothesColors(btn.targets, selectedClothes.name, idx)
-              "
-              style="display: flex; align-items: center; gap: 8px"
-            >
-              <span
-                v-if="btn.mainColor"
-                :style="{
-                  display: 'inline-block',
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: btn.mainColor,
-                  border: '1px solid #aaa',
-                }"
-              ></span>
-              {{ btn.label }}
-            </button>
-          </div>
-          <!-- 포즈 선택 버튼 -->
-          <div style="display: flex; gap: 8px; margin-bottom: 12px">
-            <button
-              v-for="pose in ['인간', '인간팔']"
-              :key="pose"
-              :style="{
-                background: currentPose === pose ? '#00bfff' : '#eee',
-                color: currentPose === pose ? '#fff' : '#333',
-                border: '1px solid #ccc',
-                borderRadius: '6px',
-                padding: '6px 16px',
-                cursor: 'pointer',
-              }"
-              @click="changePose(pose)"
-            >
-              {{ pose }}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -172,7 +249,7 @@ import {
   IText,
 } from "fabric";
 
-import deleteIcon from "@/assets/image/ui/deleteIcon.png";
+import deleteIcon from "@/assets/image/ui/delete.svg";
 import rotateIcon from "@/assets/image/ui/cached.svg";
 import resizeIcon from "@/assets/image/ui/open_in_full.svg";
 import human from "@/assets/image/인간.svg";
@@ -234,15 +311,23 @@ export default {
       selectedClothes: null,
       // { [clothes.name]: index }
       selectedColorIndexes: {},
+      avatarTabs: ["자세", "얼굴형", "머리", "눈", "입", "장식"],
+      activeAvatarTab: 0,
+      imageCount: 0,
       //아래 변수들은 터치패널을 위한 변수들
-      panelOpen: false,
+      // panelOpen: false,
+      panelOpen: true,
       touchStartY: 0,
       touchMoveY: 0,
-      activePanelTab: 0,
+      activePanelTab: 2,
     };
   },
   components: {},
   methods: {
+    openPanel(idx) {
+      this.activePanelTab = idx;
+      this.panelOpen = true;
+    },
     togglePanel() {
       this.panelOpen = !this.panelOpen;
     },
@@ -1009,12 +1094,12 @@ export default {
         this.canvas.renderAll();
       };
     },
-    // 파일 첨부로 이미지 추가
+    // 파일 첨부로 이미지 추가 삭제 카운트
     onFileChange(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      // "사용자가 추가한 이미지"만 카운트 (selectable !== false)
+      // 현재 캔버스에 추가된 사용자 이미지 개수
       let imageCount = this.canvas
         .getObjects()
         .filter(
@@ -1026,44 +1111,65 @@ export default {
         return;
       }
 
-      // 항상 첫 번째 파일만 추가
-      const file = files[0];
-      if (!file) return;
+      // 여러 장 첨부 시 최대 3개까지만 추가
+      const filesToAdd = Array.from(files).slice(0, 3 - imageCount);
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new window.Image();
-        img.src = e.target.result;
-        img.onload = () => {
-          let width = img.width;
-          let height = img.height;
-          let scale = 1;
-          // 가로가 400px을 넘으면 비율 유지하며 축소 (scale만 조정)
-          if (width > 400) {
-            scale = 400 / width;
-          }
-          const fabricImage = new FabricImage(img, {
-            left: this.canvas.width / 2,
-            top: this.canvas.height / 2,
-            originX: "center",
-            originY: "center",
-            // 원본 width/height 유지
-            width: width,
-            height: height,
-            scaleX: scale,
-            scaleY: scale,
-            selectable: true,
-            evented: true,
-            hasControls: false,
-            hasBorders: false,
-          });
-          this.addCustomControls(fabricImage);
-          this.canvas.add(fabricImage);
-          this.canvas.setActiveObject(fabricImage);
-          this.canvas.renderAll();
+      filesToAdd.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new window.Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            let scale = 1;
+            if (width > 400) {
+              scale = 400 / width;
+            }
+            const fabricImage = new FabricImage(img, {
+              left: this.canvas.width / 2,
+              top: this.canvas.height / 2,
+              originX: "center",
+              originY: "center",
+              width: width,
+              height: height,
+              scaleX: scale,
+              scaleY: scale,
+              selectable: true,
+              evented: true,
+              hasControls: false,
+              hasBorders: false,
+            });
+            this.addCustomControls(fabricImage);
+            this.canvas.add(fabricImage);
+            this.canvas.setActiveObject(fabricImage);
+            this.canvas.renderAll();
+
+            // 이미지 개수 갱신
+            this.updateImageCount();
+          };
         };
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      });
+
+      // input value 초기화(같은 파일 다시 첨부 가능)
+      event.target.value = "";
+    },
+
+    // 이미지 삭제 시에도 호출
+    removeImageObject(obj) {
+      this.canvas.remove(obj);
+      this.canvas.renderAll();
+      this.updateImageCount();
+    },
+
+    // 캔버스의 사용자 이미지 개수 갱신
+    updateImageCount() {
+      this.imageCount = this.canvas
+        .getObjects()
+        .filter(
+          (obj) => obj.type === "image" && obj.selectable !== false
+        ).length;
     },
     // 기본 이미지 교체
     replaceDefaultImage(newImageSrc) {
@@ -1071,19 +1177,26 @@ export default {
       const img = new window.Image();
       img.src = newImageSrc;
       img.onload = () => {
+        // 캔버스와 이미지의 비율 계산
+        const canvasW = this.canvas.width;
+        const canvasH = this.canvas.height;
+        const imgW = img.width;
+        const imgH = img.height;
+        const scale = Math.max(canvasW / imgW, canvasH / imgH);
+
         this.defaultImageObject.setElement(img);
         this.defaultImageObject.set({
-          width: 200,
-          height: 200,
-          scaleX: 1,
-          scaleY: 1,
+          scaleX: scale,
+          scaleY: scale,
+          left: (canvasW - imgW * scale) / 2,
+          top: (canvasH - imgH * scale) / 2,
+          originX: "left",
+          originY: "top",
+          width: imgW,
+          height: imgH,
         });
         this.canvas.renderAll();
       };
-    },
-    // 파일 첨부 input 트리거
-    triggerFileInput() {
-      this.$refs.fileInput.click();
     },
 
     // 캔버스 초기화 및 기본 오브젝트 추가
@@ -1114,17 +1227,25 @@ export default {
           ctx.restore();
         });
       });
-      // 기본 이미지 추가
+      // 배경이미지
       const img = new window.Image();
       img.src = this.backroundList[0].src;
       img.onload = async () => {
+        const canvasW = this.canvas.width;
+        const canvasH = this.canvas.height;
+        const imgW = img.width;
+        const imgH = img.height;
+        const scale = Math.max(canvasW / imgW, canvasH / imgH);
+
         const fabricImage = new FabricImage(img, {
-          left: this.canvas.width / 2,
-          top: this.canvas.height / 2,
-          originX: "center",
-          originY: "center",
-          width: 200,
-          height: 200,
+          left: (canvasW - imgW * scale) / 2,
+          top: (canvasH - imgH * scale) / 2,
+          originX: "left",
+          originY: "top",
+          scaleX: scale,
+          scaleY: scale,
+          width: imgW,
+          height: imgH,
           selectable: false,
           evented: false,
           hasControls: false,
@@ -1139,7 +1260,7 @@ export default {
         this.defaultImageObject = fabricImage;
         this.canvas.renderAll();
 
-        // 기본 이미지가 추가된 후 인간 추가
+        // 배경 이미지가 추가된 후 인간 추가
         await this.addHumanSvg();
         await this.addHumanControlLayer();
       };
@@ -1236,11 +1357,22 @@ export default {
   // 컴포넌트 마운트 시 캔버스 초기화
   mounted: async function () {
     await this.initializeCanvas();
+    if (this.canvas) {
+      this.canvas.on("object:removed", (e) => {
+        this.updateImageCount();
+      });
+    }
   },
 };
 </script>
 
 <style scoped>
+.custom-scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+}
+.custom-scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
 .edit-panel {
   transition-property: height, transform;
   transition-duration: 0.3s;
