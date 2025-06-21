@@ -1,5 +1,6 @@
 <template>
   <div class="relative">
+    <!-- TopBar(툴바)는 항상 보임 -->
     <div
       class="TopBar h-[34px] flex items-center bg-gray-900 relative select-none"
     >
@@ -8,21 +9,33 @@
       >
         2025. 06. 08
       </span>
-      <button
-        class="text-green-300 flex absolute right-[20px] z-10"
-        @click="onComplete"
-      >
-        <img src="@/assets/image/ui/download.svg" alt="" /> <span>완료</span>
-      </button>
+      <template v-if="!showPopup">
+        <button
+          class="text-green-300 flex absolute right-[20px] z-10"
+          @click="openPopup"
+        >
+          <img src="@/assets/image/ui/download.svg" alt="" /> <span>완료</span>
+        </button>
+      </template>
+      <template v-else>
+        <button
+          class="text-red-400 flex absolute left-[20px] z-10"
+          @click="closePopup"
+        >
+          취소
+        </button>
+        <button
+          class="text-blue-400 flex absolute right-[20px] z-10"
+          @click="save"
+        >
+          저장
+        </button>
+      </template>
     </div>
-    <MainCanvas ref="mainCanvas"></MainCanvas>
-    <div v-if="showPopup" class="popup-backdrop">
-      <div class="popup-content">
-        저장이 완료되었습니다!
-        <button @click="closePopup">닫기</button>
-      </div>
+    <!-- MainCanvas: 네비/패널은 showPopup이 true면 숨김 -->
+    <div style="padding-top: 34px">
+      <MainCanvas ref="mainCanvas" :hideUi="showPopup" />
     </div>
-    <MainCanvas ref="mainCanvas" :hideUi="showPopup" />
   </div>
 </template>
 
@@ -38,16 +51,16 @@ export default {
     };
   },
   methods: {
-    penPopup() {
+    openPopup() {
       this.showPopup = true;
-      // 필요하다면 MainCanvas의 상태를 popupCanvas로 복사
     },
     closePopup() {
       this.showPopup = false;
     },
     save() {
-      // 팝업 MainCanvas의 저장 메서드 호출
-      this.$refs.popupCanvas.saveCanvasAsImage();
+      if (this.$refs.mainCanvas && this.$refs.mainCanvas.saveCanvasAsImage) {
+        this.$refs.mainCanvas.saveCanvasAsImage();
+      }
       this.showPopup = false;
     },
   },

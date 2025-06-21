@@ -6,225 +6,267 @@
       ref="canvas"
       style="border: 1px solid #ccc; width: 100%; height: 100%"
     ></canvas>
-
-    <!-- 패널: 네비 위에서 바닥에 딱 붙어서 열림 -->
-    <div
-      class="edit-panel z-0 fixed pt-[28px] left-1/2 bottom-0 rounded-t-[28px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 flex flex-col transition-all duration-300"
-      :style="{
-        height: panelOpen ? '282px' : '1000px',
-        transform: panelOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)', // 닫힐 때 아래로 내려감
-        overflow: panelOpen ? 'visible' : 'hidden',
-      }"
-      @touchstart="onTouchStart"
-      @touchmove="onTouchMove"
-      @touchend="onTouchEnd"
-    >
+    <div v-if="!hideUi">
+      <!-- 패널: 네비 위에서 바닥에 딱 붙어서 열림 -->
       <div
-        class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
-        @click="togglePanel"
-      ></div>
-      <div
-        class="panel-content w-full h-full px-[30px] pb-[12px] flex-1 min-h-0 overflow-y-auto"
-        :style="{ overflowY: panelOpen ? 'auto' : 'hidden' }"
+        class="edit-panel z-0 fixed pt-[28px] left-1/2 bottom-0 rounded-t-[28px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 flex flex-col transition-all duration-300"
+        :style="{
+          height: panelOpen ? '282px' : '1000px',
+          transform: panelOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)', // 닫힐 때 아래로 내려감
+          overflow: panelOpen ? 'visible' : 'hidden',
+        }"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
       >
-        <!-- 탭별 내용 -->
-        <div v-if="activePanelTab === 0" class="h-full px-[30px]">
-          <div
-            class="flex flex-wrap gap-[15px] h-full pb-[56px] custom-scrollbar-hide"
-            style="box-sizing: border-box"
-          >
+        <div
+          class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
+          @click="togglePanel"
+        ></div>
+        <div
+          class="panel-content w-full h-full px-[30px] pb-[12px] flex-1 min-h-0 overflow-y-auto"
+          :style="{ overflowY: panelOpen ? 'auto' : 'hidden' }"
+        >
+          <!-- 탭별 내용 -->
+          <div v-if="activePanelTab === 0" class="h-full px-[30px]">
             <div
-              v-for="(img, idx) in backroundList"
-              :key="'replace-img-' + idx"
-              class="flex-shrink-0 bg-red-50"
-              :style="{
-                width: 'calc((100% - 30px) / 3)', // (전체 - 2*15px gap) / 3
-              }"
+              class="flex flex-wrap gap-[15px] h-full pb-[56px] custom-scrollbar-hide"
+              style="box-sizing: border-box"
             >
-              <button
-                @click="replaceDefaultImage(img.src)"
-                class="w-full h-full aspect-square overflow-hidden"
-                style="padding: 0"
+              <div
+                v-for="(img, idx) in backroundList"
+                :key="'replace-img-' + idx"
+                class="flex-shrink-0 bg-red-50"
+                :style="{
+                  width: 'calc((100% - 30px) / 3)', // (전체 - 2*15px gap) / 3
+                }"
+              >
+                <button
+                  @click="replaceDefaultImage(img.src)"
+                  class="w-full h-full aspect-square overflow-hidden"
+                  style="padding: 0"
+                >
+                  <img
+                    :src="img.src"
+                    :alt="'배경 ' + (idx + 1)"
+                    class="w-full h-full object-cover"
+                    draggable="false"
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="activePanelTab === 1">
+            <div class="avatar-panel">
+              <!-- 탭 네비게이션 -->
+              <div
+                class="flex gap-[34px] h-[32px] leading-[18px] text-[18px] border-b-[1px] border-black-b200"
+              >
+                <button
+                  v-for="(tab, idx) in avatarTabs"
+                  :key="tab"
+                  :class="[
+                    'flex-1 py-2',
+                    activeAvatarTab === idx
+                      ? 'text-blue-500 border-b-2 border-blue-500'
+                      : 'text-gray-500',
+                  ]"
+                  @click="activeAvatarTab = idx"
+                >
+                  {{ tab }}
+                </button>
+              </div>
+              <!-- 탭별 내용 -->
+              <div class="avatar-tab-content">
+                <div v-if="activeAvatarTab === 0">
+                  <!-- 자세(포즈) 관련 내용 -->
+                  <p>자세(포즈) 선택 영역</p>
+                  <!-- 포즈 선택 버튼 -->
+                  <div style="display: flex; gap: 8px">
+                    <button
+                      v-for="pose in ['인간', '인간팔']"
+                      :key="pose"
+                      :style="{
+                        background: currentPose === pose ? '#00bfff' : '#eee',
+                        color: currentPose === pose ? '#fff' : '#333',
+                        border: '1px solid #ccc',
+                        borderRadius: '6px',
+                        padding: '6px 16px',
+                        cursor: 'pointer',
+                      }"
+                      @click="changePose(pose)"
+                    >
+                      {{ pose }}
+                    </button>
+                  </div>
+                </div>
+                <div v-else-if="activeAvatarTab === 1">
+                  <!-- 얼굴형 관련 내용 -->
+                  <p>얼굴형 선택 영역</p>
+                </div>
+                <div v-else-if="activeAvatarTab === 2">
+                  <!-- 머리 관련 내용 -->
+                  <p>머리 선택 영역</p>
+                </div>
+                <div v-else-if="activeAvatarTab === 3">
+                  <!-- 눈 관련 내용 -->
+                  <p>눈 선택 영역</p>
+                </div>
+                <div v-else-if="activeAvatarTab === 4">
+                  <!-- 입 관련 내용 -->
+                  <p>입 선택 영역</p>
+                </div>
+                <div v-else-if="activeAvatarTab === 5">
+                  <!-- 옷/색상/포즈 등 -->
+                  <!-- 옷 종류별 아이콘 버튼 -->
+                  <div style="display: flex; gap: 8px">
+                    <button
+                      v-for="clothes in clothesList"
+                      :key="clothes.name"
+                      @click="selectClothes(clothes)"
+                      style="background: none; border: none; cursor: pointer"
+                    >
+                      <img
+                        :src="clothes.icon"
+                        :alt="clothes.name"
+                        width="48"
+                        height="48"
+                      />
+                      <div>{{ clothes.name }}</div>
+                    </button>
+                  </div>
+                  <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
+                  <div v-if="selectedClothes" style="margin: 12px 0">
+                    <button
+                      v-for="(btn, idx) in selectedClothes.colorButtons"
+                      :key="btn.label + idx"
+                      @click="
+                        changeClothesColors(
+                          btn.targets,
+                          selectedClothes.name,
+                          idx
+                        )
+                      "
+                      style="display: flex; align-items: center; gap: 8px"
+                    >
+                      <span
+                        v-if="btn.mainColor"
+                        :style="{
+                          display: 'inline-block',
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          background: btn.mainColor,
+                          border: '1px solid #aaa',
+                        }"
+                      ></span>
+                      {{ btn.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="activePanelTab === 2">
+            <div
+              class="imgBox w-full h-[32px] text-center border-b text-black-b70 border-black-b600"
+            >
+              <span>{{ imageCount }}/3</span>
+            </div>
+            <div class="flex gap-[15px] mt-2">
+              <!-- 미리보기 썸네일 -->
+              <div
+                v-for="(img, idx) in uploadedImages"
+                :key="img.fabricObj.id || img.url"
+                class="w-[90px] h-[90px] bg-black-b600 rounded-[2px] flex items-center justify-center relative"
+                style="position: relative"
               >
                 <img
-                  :src="img.src"
-                  :alt="'배경 ' + (idx + 1)"
-                  class="w-full h-full object-cover"
-                  draggable="false"
+                  :src="img.url"
+                  alt="첨부 이미지"
+                  class="object-cover w-full h-full rounded-[2px]"
                 />
-              </button>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="activePanelTab === 1">
-          <div class="avatar-panel">
-            <!-- 탭 네비게이션 -->
-            <div
-              class="flex gap-[34px] h-[32px] leading-[18px] text-[18px] border-b-[1px] border-black-b200"
-            >
-              <button
-                v-for="(tab, idx) in avatarTabs"
-                :key="tab"
-                :class="[
-                  'flex-1 py-2',
-                  activeAvatarTab === idx
-                    ? 'text-blue-500 border-b-2 border-blue-500'
-                    : 'text-gray-500',
-                ]"
-                @click="activeAvatarTab = idx"
+                <button
+                  @click="removePreviewImage(idx)"
+                  style="
+                    position: absolute;
+                    top: 4px;
+                    right: 4px;
+                    background: rgba(0, 0, 0, 0.5);
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    color: #fff;
+                    border: none;
+                    font-size: 18px;
+                    cursor: pointer;
+                  "
+                  title="삭제"
+                >
+                  ×
+                </button>
+              </div>
+              <!-- 이미지가 3개 미만일 때만 업로드 버튼 노출 -->
+              <label
+                v-if="uploadedImages.length < 3"
+                class="w-[90px] h-[90px] bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
               >
-                {{ tab }}
-              </button>
-            </div>
-            <!-- 탭별 내용 -->
-            <div class="avatar-tab-content">
-              <div v-if="activeAvatarTab === 0">
-                <!-- 자세(포즈) 관련 내용 -->
-                <p>자세(포즈) 선택 영역</p>
-                <!-- 포즈 선택 버튼 -->
-                <div style="display: flex; gap: 8px">
-                  <button
-                    v-for="pose in ['인간', '인간팔']"
-                    :key="pose"
-                    :style="{
-                      background: currentPose === pose ? '#00bfff' : '#eee',
-                      color: currentPose === pose ? '#fff' : '#333',
-                      border: '1px solid #ccc',
-                      borderRadius: '6px',
-                      padding: '6px 16px',
-                      cursor: 'pointer',
-                    }"
-                    @click="changePose(pose)"
-                  >
-                    {{ pose }}
-                  </button>
-                </div>
-              </div>
-              <div v-else-if="activeAvatarTab === 1">
-                <!-- 얼굴형 관련 내용 -->
-                <p>얼굴형 선택 영역</p>
-              </div>
-              <div v-else-if="activeAvatarTab === 2">
-                <!-- 머리 관련 내용 -->
-                <p>머리 선택 영역</p>
-              </div>
-              <div v-else-if="activeAvatarTab === 3">
-                <!-- 눈 관련 내용 -->
-                <p>눈 선택 영역</p>
-              </div>
-              <div v-else-if="activeAvatarTab === 4">
-                <!-- 입 관련 내용 -->
-                <p>입 선택 영역</p>
-              </div>
-              <div v-else-if="activeAvatarTab === 5">
-                <!-- 옷/색상/포즈 등 -->
-                <!-- 옷 종류별 아이콘 버튼 -->
-                <div style="display: flex; gap: 8px">
-                  <button
-                    v-for="clothes in clothesList"
-                    :key="clothes.name"
-                    @click="selectClothes(clothes)"
-                    style="background: none; border: none; cursor: pointer"
-                  >
-                    <img
-                      :src="clothes.icon"
-                      :alt="clothes.name"
-                      width="48"
-                      height="48"
-                    />
-                    <div>{{ clothes.name }}</div>
-                  </button>
-                </div>
-                <!-- 옷 색상 옵션 버튼 (입힌 옷이 있을 때만) -->
-                <div v-if="selectedClothes" style="margin: 12px 0">
-                  <button
-                    v-for="(btn, idx) in selectedClothes.colorButtons"
-                    :key="btn.label + idx"
-                    @click="
-                      changeClothesColors(
-                        btn.targets,
-                        selectedClothes.name,
-                        idx
-                      )
-                    "
-                    style="display: flex; align-items: center; gap: 8px"
-                  >
-                    <span
-                      v-if="btn.mainColor"
-                      :style="{
-                        display: 'inline-block',
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        background: btn.mainColor,
-                        border: '1px solid #aaa',
-                      }"
-                    ></span>
-                    {{ btn.label }}
-                  </button>
-                </div>
-              </div>
+                <img
+                  src="@/assets/image/ui/add.svg"
+                  alt="이미지 추가"
+                  width="40"
+                  height="40"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  @change="onFileChange"
+                  style="display: none"
+                />
+              </label>
             </div>
           </div>
-        </div>
-
-        <div v-else-if="activePanelTab === 2">
-          <div
-            class="w-full h-[32px] text-center border-b text-black-b70 border-black-b600"
-          >
-            <span>{{ imageCount }}/3</span>
+          <div v-else-if="activePanelTab === 3">
+            <button @click="addTextbox">텍스트 추가</button>
           </div>
-          <label
-            class="w-[90px] h-[90px] bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
-          >
-            <span style="color: #888">이미지 첨부</span>
-            <input
-              type="file"
-              accept="image/*"
-              @change="onFileChange"
-              style="display: none"
-            />
-          </label>
-        </div>
-        <div v-else-if="activePanelTab === 3">
-          <button @click="addTextbox">텍스트 추가</button>
-        </div>
-        <div v-else-if="activePanelTab === 4"></div>
-        <div v-else-if="activePanelTab === 5">
-          <!-- 이모티콘 추가 버튼 -->
-          <button
-            v-for="img in StickerList"
-            :key="img.src"
-            @click="addImage(img.src)"
-            style="background: none; border: none; cursor: pointer"
-          >
-            <img :src="img.src" :alt="img.label" width="32" height="32" />
-          </button>
+          <div v-else-if="activePanelTab === 4"></div>
+          <div v-else-if="activePanelTab === 5">
+            <!-- 이모티콘 추가 버튼 -->
+            <button
+              v-for="img in StickerList"
+              :key="img.src"
+              @click="addImage(img.src)"
+              style="background: none; border: none; cursor: pointer"
+            >
+              <img :src="img.src" :alt="img.label" width="32" height="32" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    <!-- 네비게이션 바: 항상 하단 고정, 패널과 넓이 동일 -->
-    <div
-      class="panel-nav z-100 text-[20px] fixed left-1/2 bottom-0 flex justify-around items-center h-[48px] bg-black-b900/90 w-full max-w-[430px] -translate-x-1/2"
-    >
-      <button
-        v-for="(tab, idx) in [
-          '배경',
-          '아바타',
-          '사진',
-          '텍스트',
-          '질문',
-          '스티커',
-        ]"
-        :key="tab"
-        :class="[
-          'flex-1 h-full',
-          activePanelTab === idx ? 'text-green-300 ' : 'text-black-b100',
-        ]"
-        @click="openPanel(idx)"
+      <!-- 네비게이션 바: 항상 하단 고정, 패널과 넓이 동일 -->
+      <div
+        class="panel-nav z-100 text-[20px] fixed left-1/2 bottom-0 flex justify-around items-center h-[48px] bg-black-b900/90 w-full max-w-[430px] -translate-x-1/2"
       >
-        {{ tab }}
-      </button>
+        <button
+          v-for="(tab, idx) in [
+            '배경',
+            '아바타',
+            '사진',
+            '텍스트',
+            '질문',
+            '스티커',
+          ]"
+          :key="tab"
+          :class="[
+            'flex-1 h-full',
+            activePanelTab === idx ? 'text-green-300 ' : 'text-black-b100',
+          ]"
+          @click="openPanel(idx)"
+        >
+          {{ tab }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -291,6 +333,12 @@ const clothesList = clothesListRaw.map((item) => ({
 }));
 
 export default {
+  props: {
+    hideUi: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       // Fabric.js 캔버스 인스턴스
@@ -314,6 +362,9 @@ export default {
       avatarTabs: ["자세", "얼굴형", "머리", "눈", "입", "장식"],
       activeAvatarTab: 0,
       imageCount: 0,
+      // 캔버스에 추가된 이미지
+      uploadedImages: [], // { url, fabricObj } 배열
+
       //아래 변수들은 터치패널을 위한 변수들
       // panelOpen: false,
       panelOpen: true,
@@ -1099,61 +1150,68 @@ export default {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      // 현재 캔버스에 추가된 사용자 이미지 개수
-      let imageCount = this.canvas
-        .getObjects()
-        .filter(
-          (obj) => obj.type === "image" && obj.selectable !== false
-        ).length;
+      // 현재 업로드된 이미지 개수
+      let imageCount = this.uploadedImages.length;
 
+      // 이미지가 이미 3개면 추가 불가
       if (imageCount >= 3) {
         alert("이미지는 최대 3개까지만 추가할 수 있습니다.");
         return;
       }
 
-      // 여러 장 첨부 시 최대 3개까지만 추가
-      const filesToAdd = Array.from(files).slice(0, 3 - imageCount);
+      // 한 번에 하나만 추가
+      const file = files[0];
+      if (!file) return;
 
-      filesToAdd.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new window.Image();
-          img.src = e.target.result;
-          img.onload = () => {
-            let width = img.width;
-            let height = img.height;
-            let scale = 1;
-            if (width > 400) {
-              scale = 400 / width;
-            }
-            const fabricImage = new FabricImage(img, {
-              left: this.canvas.width / 2,
-              top: this.canvas.height / 2,
-              originX: "center",
-              originY: "center",
-              width: width,
-              height: height,
-              scaleX: scale,
-              scaleY: scale,
-              selectable: true,
-              evented: true,
-              hasControls: false,
-              hasBorders: false,
-            });
-            this.addCustomControls(fabricImage);
-            this.canvas.add(fabricImage);
-            this.canvas.setActiveObject(fabricImage);
-            this.canvas.renderAll();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          let scale = 1;
+          if (width > 400) {
+            scale = 400 / width;
+          }
+          const fabricImage = new FabricImage(img, {
+            left: this.canvas.width / 2,
+            top: this.canvas.height / 2,
+            originX: "center",
+            originY: "center",
+            width: width,
+            height: height,
+            scaleX: scale,
+            scaleY: scale,
+            selectable: true,
+            evented: true,
+            hasControls: false,
+            hasBorders: false,
+          });
+          this.addCustomControls(fabricImage);
+          this.canvas.add(fabricImage);
+          this.canvas.setActiveObject(fabricImage);
+          this.canvas.renderAll();
 
-            // 이미지 개수 갱신
-            this.updateImageCount();
-          };
+          // 미리보기 배열에 추가
+          this.uploadedImages.push({
+            url: e.target.result,
+            fabricObj: markRaw(fabricImage),
+          });
+          this.updateImageCount();
         };
-        reader.readAsDataURL(file);
-      });
+      };
+      reader.readAsDataURL(file);
 
-      // input value 초기화(같은 파일 다시 첨부 가능)
       event.target.value = "";
+    },
+    //미리보기 상의 이미지 삭제
+    removePreviewImage(idx) {
+      const img = this.uploadedImages[idx];
+      console.log("삭제 시도", idx, img, this.canvas.contains(img.fabricObj));
+      if (img && img.fabricObj && this.canvas.contains(img.fabricObj)) {
+        this.canvas.remove(img.fabricObj);
+      }
     },
 
     // 이미지 삭제 시에도 호출
@@ -1359,6 +1417,24 @@ export default {
     await this.initializeCanvas();
     if (this.canvas) {
       this.canvas.on("object:removed", (e) => {
+        console.log("object:removed", e.target);
+        if (
+          e.target &&
+          e.target.type === "image" &&
+          e.target.selectable !== false
+        ) {
+          const idx = this.uploadedImages.findIndex(
+            (img) => img.fabricObj === e.target
+          );
+          if (idx !== -1) {
+            this.uploadedImages.splice(idx, 1);
+            this.uploadedImages = this.uploadedImages.slice();
+            console.log(
+              "object:removed 후 uploadedImages",
+              this.uploadedImages
+            );
+          }
+        }
         this.updateImageCount();
       });
     }
