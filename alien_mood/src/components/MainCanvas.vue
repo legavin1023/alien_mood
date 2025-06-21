@@ -737,10 +737,11 @@ export default {
     },
     // 커스텀 컨트롤(삭제/회전/크기조절) 렌더링 함수들
     renderDeleteIcon(ctx, left, top, _styleOverride, fabricObject) {
-      const size = 28;
-      const padding = 12;
+      const dpr = window.devicePixelRatio || 1;
+      const size = 36 * dpr;
+      const padding = 12 * dpr;
       const hitSize = size + padding * 2;
-      const img = new Image();
+      const img = new window.Image();
       img.src = deleteIcon;
       ctx.save();
       ctx.translate(left, top);
@@ -756,7 +757,7 @@ export default {
       ctx.restore();
     },
     renderRotateIcon(ctx, left, top, _styleOverride, fabricObject) {
-      const size = 28;
+      const size = 36;
       const padding = 12;
       const hitSize = size + padding * 2;
       const img = new Image();
@@ -775,7 +776,7 @@ export default {
       ctx.restore();
     },
     renderResizeIcon(ctx, left, top, _styleOverride, fabricObject) {
-      const size = 24;
+      const size = 36;
       const padding = 12;
       const hitSize = size + padding * 2;
       const img = new Image();
@@ -842,6 +843,7 @@ export default {
       canvasInstance.requestRenderAll();
     },
     addCharacterControls(obj) {
+      const dpr = window.devicePixelRatio || 1;
       obj.setControlsVisibility({
         tl: false,
         tr: false,
@@ -862,35 +864,35 @@ export default {
         cursorStyle: "pointer",
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
-        cornerSize: 24,
-        hitbox: { width: 60, height: 60 },
+        cornerSize: 24 * dpr,
+        hitbox: { width: 60 * dpr, height: 60 * dpr },
       });
       obj.controls.rotateControl = new Control({
         x: 0,
         y: -0.5,
-        offsetY: -40,
+        offsetY: -40 * dpr,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
-        cornerSize: 24,
+        cornerSize: 24 * dpr,
         actionHandler: controlsUtils.rotationWithSnapping,
-        hitbox: { width: 60, height: 60 },
+        hitbox: { width: 60 * dpr, height: 60 * dpr },
       });
       obj.controls.resizeControl = new Control({
         x: 0.5,
         y: 0.5,
         cursorStyle: "se-resize",
         render: this.renderResizeIcon,
-        cornerSize: 24,
+        cornerSize: 24 * dpr,
         actionHandler: controlsUtils.scalingEqually,
-        hitbox: { width: 60, height: 60 },
+        hitbox: { width: 60 * dpr, height: 60 * dpr },
       });
 
       obj.set({
         cornerColor: "#00000000",
-        cornerSize: 24,
+        cornerSize: 24 * dpr,
         cornerStyle: "circle",
         borderColor: "#ffffff",
-        borderDashArray: [6, 4],
+        borderDashArray: [6 * dpr, 4 * dpr],
         transparentCorners: false,
         hasBorders: false,
         hasControls: false,
@@ -935,6 +937,8 @@ export default {
     },
     // 커스텀 컨트롤 추가
     addCustomControls(obj) {
+      const dpr = window.devicePixelRatio || 1;
+
       obj.setControlsVisibility({
         tl: false,
         tr: false,
@@ -956,39 +960,38 @@ export default {
         cursorStyle: "pointer",
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
-        cornerSize: 24,
-        hitbox: { width: 60, height: 60 },
+        cornerSize: 24 * dpr,
+        hitbox: { width: 60 * dpr, height: 60 * dpr },
       });
       obj.controls.rotateControl = new Control({
         x: 0,
         y: -0.5,
-        offsetY: -40,
+        offsetY: -40 * dpr,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
-        cornerSize: 24,
+        cornerSize: 24 * dpr,
         actionHandler: controlsUtils.rotationWithSnapping,
-        hitbox: { width: 60, height: 60 },
+        hitbox: { width: 60 * dpr, height: 60 * dpr },
       });
       obj.controls.resizeControl = new Control({
         x: 0.5,
         y: 0.5,
         cursorStyle: "se-resize",
         render: this.renderResizeIcon,
-        cornerSize: 24,
+        cornerSize: 24 * dpr,
         actionHandler: controlsUtils.scalingEqually,
-        hitbox: { width: 60, height: 60 },
+        hitbox: { width: 60 * dpr, height: 60 * dpr },
       });
 
       obj.set({
         cornerColor: "#00000000",
-        cornerSize: 24,
+        cornerSize: 24 * dpr,
         cornerStyle: "circle",
         borderColor: "#ffffff",
-        borderDashArray: [6, 4],
+        borderDashArray: [6 * dpr, 4 * dpr],
         transparentCorners: false,
         hasBorders: false,
         hasControls: false,
-        // editable: true, // ← 이 줄은 필요 없음!
       });
 
       obj.on("selected", () => {
@@ -1340,11 +1343,12 @@ export default {
 
     // 캔버스 초기화 및 기본 오브젝트 추가
     async initializeCanvas() {
-      // 부모 요소의 실제 크기 가져오기
-      const wrapper = this.$el; // .mobile-wrapper
+      const wrapper = this.$el.querySelector(".mobile-wrapper") || this.$el;
       const rect = wrapper.getBoundingClientRect();
-      const canvasWidth = rect.width;
-      const canvasHeight = rect.height;
+      const dpr = window.devicePixelRatio || 1;
+
+      const canvasWidth = rect.width * dpr;
+      const canvasHeight = rect.height * dpr;
 
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
@@ -1354,24 +1358,11 @@ export default {
           backgroundColor: "#ffffff",
         })
       );
-      this.canvas.on("after:render", () => {
-        const ctx = this.canvas.getContext();
-        const objs = this.canvas.getObjects();
-        objs.forEach((obj, idx) => {
-          // 오브젝트의 좌상단 좌표 계산
-          const p = obj.getPointByOrigin
-            ? obj.getPointByOrigin("left", "top")
-            : { x: obj.left, y: obj.top };
-          ctx.save();
-          ctx.font = "bold 18px sans-serif";
-          ctx.fillStyle = "red";
-          ctx.strokeStyle = "white";
-          ctx.lineWidth = 3;
-          ctx.strokeText(idx + "", p.x + 8, p.y + 24);
-          ctx.fillText(idx + "", p.x + 8, p.y + 24);
-          ctx.restore();
-        });
-      });
+
+      // CSS 크기는 원래 크기로
+      this.$refs.canvas.style.width = rect.width + "px";
+      this.$refs.canvas.style.height = rect.height + "px";
+
       // 배경이미지
       const img = new window.Image();
       img.src = this.backroundList[0].src;

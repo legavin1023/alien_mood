@@ -15,7 +15,7 @@
 <script>
 import { ref, onMounted, markRaw } from "vue";
 import { Canvas, Rect, Control, util, controlsUtils } from "fabric";
-import deleteIcon from "@/assets/image/deleteIcon.png";
+import deleteIcon from "@/assets/image/delete.svg";
 import rotateIcon from "@/assets/image/custom-handle.png";
 import resizeIcon from "@/assets/image/html.png";
 

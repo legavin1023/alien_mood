@@ -147,7 +147,7 @@ import {
 import image4 from "@/assets/image/backround/다가오는솔라스 (1).jpg";
 import image5 from "@/assets/image/backround/다가오는솔라스 (2).jpg";
 import image6 from "@/assets/image/backround/다가오는솔라스 (4).jpg";
-import deleteIcon from "@/assets/image/ui/deleteIcon.png";
+import deleteIcon from "@/assets/image/ui/delete.svg";
 import rotateIcon from "@/assets/image/ui/cached.svg";
 import resizeIcon from "@/assets/image/ui/open_in_full.svg";
 import human from "@/assets/image/인간.svg";

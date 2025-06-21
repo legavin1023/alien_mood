@@ -1,18 +1,18 @@
-<svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_d_33_195)">
-<rect x="1" y="1" width="29" height="29" rx="14.5" fill="white" shape-rendering="crispEdges"/>
-<path d="M15.4928 20.3974C14.1602 20.3974 13.0108 19.931 12.0446 18.9982C11.0785 18.0653 10.5954 16.9469 10.5954 15.6428V15.5286L9.89573 16.2282L8.95337 15.2715L11.4949 12.7157L14.0364 15.2715L13.0941 16.2282L12.3944 15.5286V15.5999C12.3944 16.4281 12.6967 17.1349 13.3011 17.7203C13.9055 18.3057 14.6361 18.5984 15.4928 18.5984C15.7689 18.5984 16.0378 18.5627 16.2995 18.4913C16.5613 18.4199 16.8159 18.3128 17.0634 18.17L18.3627 19.4551C17.9344 19.7597 17.4775 19.9929 16.992 20.1547C16.5066 20.3165 16.0068 20.3974 15.4928 20.3974ZM19.505 18.27L16.9492 15.7285L17.9058 14.7718L18.6055 15.4714V15.4001C18.6055 14.5719 18.3009 13.8651 17.6917 13.2797C17.0825 12.6943 16.3495 12.4016 15.4928 12.4016C15.2168 12.4016 14.9479 12.4373 14.6861 12.5087C14.4243 12.5801 14.1697 12.6872 13.9222 12.83L12.6372 11.5306C13.0655 11.226 13.52 10.9952 14.0007 10.8381C14.4814 10.6811 14.9788 10.6026 15.4928 10.6026C16.8255 10.6026 17.9772 11.069 18.9482 12.0018C19.9191 12.9347 20.4045 14.0531 20.4045 15.3572V15.4714L21.0899 14.7718L22.0465 15.7285L19.505 18.27Z" fill="#1C1B1F"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 27.9.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="레이어_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
+	 y="0px" viewBox="0 0 30.9 30.9" style="enable-background:new 0 0 30.9 30.9;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#FFFFFF;}
+	.st1{fill:#1C1B1F;}
+</style>
+<g>
+	<path shape-rendering="crispEdges" class="st0" d="M15.4,0L15.4,0C24,0,30.9,6.9,30.9,15.4l0,0c0,8.5-6.9,15.4-15.4,15.4l0,0
+		C6.9,30.9,0,24,0,15.4l0,0C0,6.9,6.9,0,15.4,0z"/>
+	<path class="st1" d="M15.4,20.7c-1.4,0-2.6-0.5-3.7-1.5c-1-1-1.5-2.2-1.5-3.6v-0.1l-0.7,0.7l-1-1l2.7-2.7l2.7,2.7l-1,1l-0.7-0.7
+		v0.1c0,0.9,0.3,1.6,1,2.3c0.6,0.6,1.4,0.9,2.3,0.9c0.3,0,0.6,0,0.9-0.1c0.3-0.1,0.6-0.2,0.8-0.3l1.4,1.4C18,20,17.6,20.2,17,20.4
+		C16.5,20.6,16,20.7,15.4,20.7z M19.7,18.4L17,15.7l1-1l0.7,0.7v-0.1c0-0.9-0.3-1.6-1-2.3c-0.6-0.6-1.4-0.9-2.3-0.9
+		c-0.3,0-0.6,0-0.9,0.1c-0.3,0.1-0.6,0.2-0.8,0.3l-1.4-1.4c0.5-0.3,0.9-0.6,1.5-0.7c0.5-0.2,1-0.3,1.6-0.3c1.4,0,2.6,0.5,3.7,1.5
+		c1,1,1.6,2.2,1.6,3.6v0.1l0.7-0.7l1,1L19.7,18.4z"/>
 </g>
-<defs>
-<filter id="filter0_d_33_195" x="0" y="0" width="33" height="33" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feOffset dx="1" dy="1"/>
-<feGaussianBlur stdDeviation="1"/>
-<feComposite in2="hardAlpha" operator="out"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_33_195"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_33_195" result="shape"/>
-</filter>
-</defs>
 </svg>
