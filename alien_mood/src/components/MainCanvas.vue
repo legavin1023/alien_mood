@@ -228,7 +228,30 @@
             </div>
           </div>
           <div v-else-if="activePanelTab === 3">
-            <button @click="addTextbox">텍스트 추가</button>
+            <button
+              @click="addTextbox"
+              class="w-[300px] h-[42px] bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
+              style="margin: 0 auto"
+            >
+              <span
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  color: #fff;
+                  font-size: 18px;
+                  font-weight: bold;
+                  gap: 8px;
+                "
+              >
+                <img
+                  src="@/assets/image/ui/add.svg"
+                  alt="이미지 추가"
+                  width="40"
+                  height="40"
+                />
+              </span>
+            </button>
           </div>
           <div v-else-if="activePanelTab === 4"></div>
           <div v-else-if="activePanelTab === 5">
@@ -1317,10 +1340,16 @@ export default {
 
     // 캔버스 초기화 및 기본 오브젝트 추가
     async initializeCanvas() {
+      // 부모 요소의 실제 크기 가져오기
+      const wrapper = this.$el; // .mobile-wrapper
+      const rect = wrapper.getBoundingClientRect();
+      const canvasWidth = rect.width;
+      const canvasHeight = rect.height;
+
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
-          width: window.innerWidth,
-          height: window.innerHeight,
+          width: canvasWidth,
+          height: canvasHeight,
           selection: true,
           backgroundColor: "#ffffff",
         })
