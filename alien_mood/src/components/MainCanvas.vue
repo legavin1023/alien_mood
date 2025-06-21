@@ -420,7 +420,7 @@ export default {
         evented: true,
         hasControls: false,
         hasBorders: false,
-        padding: 20,
+        padding: 12,
       });
       this.addCharacterControls(controlLayer);
       this.canvas.add(controlLayer);
@@ -715,14 +715,14 @@ export default {
     // 커스텀 컨트롤(삭제/회전/크기조절) 렌더링 함수들
     renderDeleteIcon(ctx, left, top, _styleOverride, fabricObject) {
       const size = 28;
-      const padding = 16;
+      const padding = 12;
       const hitSize = size + padding * 2;
       const img = new Image();
       img.src = deleteIcon;
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 1;
       ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
@@ -734,14 +734,14 @@ export default {
     },
     renderRotateIcon(ctx, left, top, _styleOverride, fabricObject) {
       const size = 28;
-      const padding = 16;
+      const padding = 12;
       const hitSize = size + padding * 2;
       const img = new Image();
       img.src = rotateIcon;
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 1;
       ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
@@ -753,14 +753,14 @@ export default {
     },
     renderResizeIcon(ctx, left, top, _styleOverride, fabricObject) {
       const size = 24;
-      const padding = 16;
+      const padding = 12;
       const hitSize = size + padding * 2;
       const img = new Image();
       img.src = resizeIcon;
       ctx.save();
       ctx.translate(left, top);
       ctx.rotate(util.degreesToRadians(fabricObject.angle));
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 1;
       ctx.drawImage(img, -size / 2, -size / 2, size, size);
       ctx.globalAlpha = 0.01;
       ctx.beginPath();
@@ -839,7 +839,7 @@ export default {
         cursorStyle: "pointer",
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
-        cornerSize: 28,
+        cornerSize: 24,
         hitbox: { width: 60, height: 60 },
       });
       obj.controls.rotateControl = new Control({
@@ -848,7 +848,7 @@ export default {
         offsetY: -40,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
-        cornerSize: 28,
+        cornerSize: 24,
         actionHandler: controlsUtils.rotationWithSnapping,
         hitbox: { width: 60, height: 60 },
       });
@@ -857,16 +857,16 @@ export default {
         y: 0.5,
         cursorStyle: "se-resize",
         render: this.renderResizeIcon,
-        cornerSize: 28,
+        cornerSize: 24,
         actionHandler: controlsUtils.scalingEqually,
         hitbox: { width: 60, height: 60 },
       });
 
       obj.set({
         cornerColor: "#00000000",
-        cornerSize: 18,
+        cornerSize: 24,
         cornerStyle: "circle",
-        borderColor: "#00bfff",
+        borderColor: "#ffffff",
         borderDashArray: [6, 4],
         transparentCorners: false,
         hasBorders: false,
@@ -933,7 +933,7 @@ export default {
         cursorStyle: "pointer",
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
-        cornerSize: 28,
+        cornerSize: 24,
         hitbox: { width: 60, height: 60 },
       });
       obj.controls.rotateControl = new Control({
@@ -942,7 +942,7 @@ export default {
         offsetY: -40,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
-        cornerSize: 28,
+        cornerSize: 24,
         actionHandler: controlsUtils.rotationWithSnapping,
         hitbox: { width: 60, height: 60 },
       });
@@ -951,16 +951,16 @@ export default {
         y: 0.5,
         cursorStyle: "se-resize",
         render: this.renderResizeIcon,
-        cornerSize: 28,
+        cornerSize: 24,
         actionHandler: controlsUtils.scalingEqually,
         hitbox: { width: 60, height: 60 },
       });
 
       obj.set({
         cornerColor: "#00000000",
-        cornerSize: 18,
+        cornerSize: 24,
         cornerStyle: "circle",
-        borderColor: "#00bfff",
+        borderColor: "#ffffff",
         borderDashArray: [6, 4],
         transparentCorners: false,
         hasBorders: false,
@@ -1017,7 +1017,7 @@ export default {
         originX: "center",
         originY: "center",
         centeredRotation: true,
-        padding: 16,
+        padding: 12,
         selectable: true,
         evented: true,
         hasControls: false,
@@ -1031,7 +1031,7 @@ export default {
     // 텍스트 추가
     addTextbox() {
       const text = "1.방문자 카운팅 ";
-      const padding = 24;
+      const padding = 12;
       const textbox = new IText(text, {
         left: this.canvas.width / 2,
         top: this.canvas.height / 2,
@@ -1121,28 +1121,60 @@ export default {
       img.onload = () => {
         let width = img.width;
         let height = img.height;
-        // 가로가 400px을 넘으면 비율 유지하며 축소
-        if (width > 400) {
-          const scale = 400 / width;
-          width = 400;
-          height = height * scale;
-        }
+        const padding = 12; // 원하는 만큼
+
+        // fabric.Image 생성
         const fabricImage = new FabricImage(img, {
-          left: this.canvas.width / 2,
-          top: this.canvas.height / 2,
+          left: 0,
+          top: 0,
           originX: "center",
           originY: "center",
           width,
           height,
+          selectable: false,
+          evented: false,
+          hasControls: false,
+          hasBorders: false,
+        });
+
+        // 투명한 Rect 생성 (이미지보다 padding*2만큼 크게)
+        const bgRect = new Rect({
+          left: 0,
+          top: 0,
+          originX: "center",
+          originY: "center",
+          width: width + padding * 2,
+          height: height + padding * 2,
+          fill: "rgba(0,0,0,0)",
+          selectable: false,
+          evented: false,
+          hasControls: false,
+          hasBorders: false,
+        });
+
+        // Group으로 묶기
+        const group = new Group([bgRect, fabricImage], {
+          left: this.canvas.width / 2,
+          top: this.canvas.height / 2,
+          originX: "center",
+          originY: "center",
           selectable: true,
           evented: true,
           hasControls: false,
           hasBorders: false,
         });
-        this.addCustomControls(fabricImage);
-        this.canvas.add(fabricImage);
-        this.canvas.setActiveObject(fabricImage);
+
+        this.addCustomControls(group);
+        this.canvas.add(group);
+        this.canvas.setActiveObject(group);
         this.canvas.renderAll();
+
+        // 미리보기 배열에 추가 (group을 fabricObj로 저장)
+        this.uploadedImages.push({
+          url: imageSrc,
+          fabricObj: markRaw(group),
+        });
+        this.updateImageCount();
       };
     },
     // 파일 첨부로 이미지 추가 삭제 카운트
@@ -1150,16 +1182,12 @@ export default {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      // 현재 업로드된 이미지 개수
       let imageCount = this.uploadedImages.length;
-
-      // 이미지가 이미 3개면 추가 불가
       if (imageCount >= 3) {
         alert("이미지는 최대 3개까지만 추가할 수 있습니다.");
         return;
       }
 
-      // 한 번에 하나만 추가
       const file = files[0];
       if (!file) return;
 
@@ -1174,29 +1202,60 @@ export default {
           if (width > 400) {
             scale = 400 / width;
           }
+          const padding = 12;
+
+          // fabric.Image 생성
           const fabricImage = new FabricImage(img, {
-            left: this.canvas.width / 2,
-            top: this.canvas.height / 2,
+            left: 0,
+            top: 0,
             originX: "center",
             originY: "center",
             width: width,
             height: height,
             scaleX: scale,
             scaleY: scale,
+            selectable: false,
+            evented: false,
+            hasControls: false,
+            hasBorders: false,
+          });
+
+          // 투명한 Rect 생성
+          const bgRect = new Rect({
+            left: 0,
+            top: 0,
+            originX: "center",
+            originY: "center",
+            width: width * scale + padding * 2,
+            height: height * scale + padding * 2,
+            fill: "rgba(0,0,0,0)",
+            selectable: false,
+            evented: false,
+            hasControls: false,
+            hasBorders: false,
+          });
+
+          // Group으로 묶기
+          const group = new Group([bgRect, fabricImage], {
+            left: this.canvas.width / 2,
+            top: this.canvas.height / 2,
+            originX: "center",
+            originY: "center",
             selectable: true,
             evented: true,
             hasControls: false,
             hasBorders: false,
           });
-          this.addCustomControls(fabricImage);
-          this.canvas.add(fabricImage);
-          this.canvas.setActiveObject(fabricImage);
+
+          this.addCustomControls(group);
+          this.canvas.add(group);
+          this.canvas.setActiveObject(group);
           this.canvas.renderAll();
 
-          // 미리보기 배열에 추가
+          // 미리보기 배열에 group을 저장
           this.uploadedImages.push({
             url: e.target.result,
-            fabricObj: markRaw(fabricImage),
+            fabricObj: markRaw(group),
           });
           this.updateImageCount();
         };
@@ -1208,7 +1267,6 @@ export default {
     //미리보기 상의 이미지 삭제
     removePreviewImage(idx) {
       const img = this.uploadedImages[idx];
-      console.log("삭제 시도", idx, img, this.canvas.contains(img.fabricObj));
       if (img && img.fabricObj && this.canvas.contains(img.fabricObj)) {
         this.canvas.remove(img.fabricObj);
       }
@@ -1417,23 +1475,12 @@ export default {
     await this.initializeCanvas();
     if (this.canvas) {
       this.canvas.on("object:removed", (e) => {
-        console.log("object:removed", e.target);
-        if (
-          e.target &&
-          e.target.type === "image" &&
-          e.target.selectable !== false
-        ) {
-          const idx = this.uploadedImages.findIndex(
-            (img) => img.fabricObj === e.target
-          );
-          if (idx !== -1) {
-            this.uploadedImages.splice(idx, 1);
-            this.uploadedImages = this.uploadedImages.slice();
-            console.log(
-              "object:removed 후 uploadedImages",
-              this.uploadedImages
-            );
-          }
+        const idx = this.uploadedImages.findIndex(
+          (img) => img.fabricObj === e.target
+        );
+        if (idx !== -1) {
+          this.uploadedImages.splice(idx, 1);
+          this.uploadedImages = this.uploadedImages.slice();
         }
         this.updateImageCount();
       });
