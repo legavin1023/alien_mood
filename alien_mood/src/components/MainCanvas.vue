@@ -236,7 +236,7 @@
             <button
               v-for="img in StickerList"
               :key="img.src"
-              @click="addImage(img.src)"
+              @click="addSticker(img.src)"
               style="background: none; border: none; cursor: pointer"
             >
               <img :src="img.src" :alt="img.label" width="32" height="32" />
@@ -1468,6 +1468,60 @@ export default {
         this.canvas._objects = objs;
         this.canvas.renderAll();
       });
+    },
+    addSticker(stickerSrc) {
+      const img = new window.Image();
+      img.src = stickerSrc;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        const padding = 12;
+
+        const fabricImage = new FabricImage(img, {
+          left: 0,
+          top: 0,
+          originX: "center",
+          originY: "center",
+          width,
+          height,
+          selectable: false,
+          evented: false,
+          hasControls: false,
+          hasBorders: false,
+        });
+
+        const bgRect = new Rect({
+          left: 0,
+          top: 0,
+          originX: "center",
+          originY: "center",
+          width: width + padding * 2,
+          height: height + padding * 2,
+          fill: "rgba(0,0,0,0)",
+          selectable: false,
+          evented: false,
+          hasControls: false,
+          hasBorders: false,
+        });
+
+        const group = new Group([bgRect, fabricImage], {
+          left: this.canvas.width / 2,
+          top: this.canvas.height / 2,
+          originX: "center",
+          originY: "center",
+          selectable: true,
+          evented: true,
+          hasControls: false,
+          hasBorders: false,
+        });
+
+        this.addCustomControls(group);
+        this.canvas.add(group);
+        this.canvas.setActiveObject(group);
+        this.canvas.renderAll();
+
+        // 스티커는 uploadedImages에 추가하지 않음!
+      };
     },
   },
   // 컴포넌트 마운트 시 캔버스 초기화
