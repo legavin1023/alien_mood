@@ -24,6 +24,7 @@
           pointerEvents: panelOpen ? 'auto' : 'none',
         }"
         @click.stop
+        @touchmove.prevent
       >
         <div
           class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
@@ -1483,6 +1484,17 @@ export default {
           }
           this.updateImageCount();
         });
+      }
+      // 아래로 스와이프 새로고침 방지
+      const wrapper = this.$el.querySelector(".mobile-wrapper");
+      if (wrapper) {
+        wrapper.addEventListener(
+          "touchmove",
+          (e) => {
+            if (this.panelOpen) e.preventDefault();
+          },
+          { passive: false }
+        );
       }
     });
   },
