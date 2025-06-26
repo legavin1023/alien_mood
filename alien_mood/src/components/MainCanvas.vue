@@ -1,23 +1,29 @@
 <template>
   <div
     class="mobile-wrapper relative bg-white max-w-[430px] mx-auto min-h-screen select-none"
+    @touchstart="onTouchStart"
+    @touchmove="onTouchMove"
+    @touchend="onTouchEnd"
   >
-    <canvas
-      ref="canvas"
-      style="border: 1px solid #ccc; width: 100%; height: 100%"
-    ></canvas>
+    <canvas ref="canvas" style="border: 1px solid #ccc"></canvas>
     <div v-if="!hideUi">
+      <!-- 오버레이: 패널이 열려 있을 때만 표시 -->
+      <div
+        v-if="panelOpen"
+        class="fixed left-0 right-0 top-0 bottom-[282px] z-10"
+        style="background: transparent"
+        @click.stop="panelOpen = false"
+      ></div>
       <!-- 패널: 네비 위에서 바닥에 딱 붙어서 열림 -->
       <div
         class="edit-panel z-0 fixed pt-[28px] left-1/2 bottom-0 rounded-t-[28px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 flex flex-col transition-all duration-300"
         :style="{
-          height: panelOpen ? '282px' : '1000px',
-          transform: panelOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)', // 닫힐 때 아래로 내려감
+          height: panelOpen ? '282px' : '0px',
+          transform: panelOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)',
           overflow: panelOpen ? 'visible' : 'hidden',
+          pointerEvents: panelOpen ? 'auto' : 'none',
         }"
-        @touchstart="onTouchStart"
-        @touchmove="onTouchMove"
-        @touchend="onTouchEnd"
+        @click.stop
       >
         <div
           class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
@@ -407,19 +413,30 @@ export default {
     },
     onTouchStart(e) {
       this.touchStartY = e.touches[0].clientY;
+      this.touchMoveY = e.touches[0].clientY;
+      this.touchStartTime = Date.now();
     },
     onTouchMove(e) {
       this.touchMoveY = e.touches[0].clientY;
     },
     onTouchEnd() {
       const delta = this.touchStartY - this.touchMoveY;
-      if (delta > 30) {
-        // 위로 드래그: 열기
-        this.panelOpen = true;
-      } else if (delta < -30) {
-        // 아래로 드래그: 닫기
+      const duration = Date.now() - this.touchStartTime;
+
+      // 패널이 열려 있을 때만 아래로 스와이프 닫기 허용
+      if (
+        this.panelOpen &&
+        delta < -30 &&
+        Math.abs(delta) > 30 &&
+        duration < 500
+      ) {
         this.panelOpen = false;
       }
+      // 패널이 닫혀 있을 때만 "충분히 긴" 위로 스와이프만 허용 (예: 80px 이상)
+      else if (!this.panelOpen && delta > 80 && duration < 500) {
+        this.panelOpen = true;
+      }
+      // 클릭(짧은 터치)에는 아무 동작도 하지 않음
     },
     async addHumanControlLayer() {
       // 기존 컨트롤 레이어가 있으면 삭제
@@ -715,6 +732,7 @@ export default {
       const dataUrl = this.canvas.toDataURL({
         format: "jpg",
         quality: 1.0,
+        multiplier: 4,
       });
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -737,9 +755,8 @@ export default {
     },
     // 커스텀 컨트롤(삭제/회전/크기조절) 렌더링 함수들
     renderDeleteIcon(ctx, left, top, _styleOverride, fabricObject) {
-      const dpr = window.devicePixelRatio || 1;
-      const size = 36 * dpr;
-      const padding = 12 * dpr;
+      const size = 36;
+      const padding = 12;
       const hitSize = size + padding * 2;
       const img = new window.Image();
       img.src = deleteIcon;
@@ -864,35 +881,35 @@ export default {
         cursorStyle: "pointer",
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
-        cornerSize: 24 * dpr,
-        hitbox: { width: 60 * dpr, height: 60 * dpr },
+        cornerSize: 24,
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.rotateControl = new Control({
         x: 0,
         y: -0.5,
-        offsetY: -40 * dpr,
+        offsetY: -40,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
-        cornerSize: 24 * dpr,
+        cornerSize: 24,
         actionHandler: controlsUtils.rotationWithSnapping,
-        hitbox: { width: 60 * dpr, height: 60 * dpr },
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.resizeControl = new Control({
         x: 0.5,
         y: 0.5,
         cursorStyle: "se-resize",
         render: this.renderResizeIcon,
-        cornerSize: 24 * dpr,
+        cornerSize: 24,
         actionHandler: controlsUtils.scalingEqually,
-        hitbox: { width: 60 * dpr, height: 60 * dpr },
+        hitbox: { width: 60, height: 60 },
       });
 
       obj.set({
         cornerColor: "#00000000",
-        cornerSize: 24 * dpr,
+        cornerSize: 24,
         cornerStyle: "circle",
         borderColor: "#ffffff",
-        borderDashArray: [6 * dpr, 4 * dpr],
+        borderDashArray: [6, 4],
         transparentCorners: false,
         hasBorders: false,
         hasControls: false,
@@ -960,35 +977,35 @@ export default {
         cursorStyle: "pointer",
         mouseUpHandler: this.deleteObject,
         render: this.renderDeleteIcon,
-        cornerSize: 24 * dpr,
-        hitbox: { width: 60 * dpr, height: 60 * dpr },
+        cornerSize: 24,
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.rotateControl = new Control({
         x: 0,
         y: -0.5,
-        offsetY: -40 * dpr,
+        offsetY: -40,
         cursorStyle: "crosshair",
         render: this.renderRotateIcon,
-        cornerSize: 24 * dpr,
+        cornerSize: 24,
         actionHandler: controlsUtils.rotationWithSnapping,
-        hitbox: { width: 60 * dpr, height: 60 * dpr },
+        hitbox: { width: 60, height: 60 },
       });
       obj.controls.resizeControl = new Control({
         x: 0.5,
         y: 0.5,
         cursorStyle: "se-resize",
         render: this.renderResizeIcon,
-        cornerSize: 24 * dpr,
+        cornerSize: 24,
         actionHandler: controlsUtils.scalingEqually,
-        hitbox: { width: 60 * dpr, height: 60 * dpr },
+        hitbox: { width: 60, height: 60 },
       });
 
       obj.set({
         cornerColor: "#00000000",
-        cornerSize: 24 * dpr,
+        cornerSize: 24,
         cornerStyle: "circle",
         borderColor: "#ffffff",
-        borderDashArray: [6 * dpr, 4 * dpr],
+        borderDashArray: [6, 4],
         transparentCorners: false,
         hasBorders: false,
         hasControls: false,
@@ -1313,17 +1330,16 @@ export default {
           (obj) => obj.type === "image" && obj.selectable !== false
         ).length;
     },
-    // 기본 이미지 교체
     replaceDefaultImage(newImageSrc) {
       if (!this.defaultImageObject) return;
       const img = new window.Image();
       img.src = newImageSrc;
       img.onload = () => {
-        // 캔버스와 이미지의 비율 계산
         const canvasW = this.canvas.width;
         const canvasH = this.canvas.height;
         const imgW = img.width;
         const imgH = img.height;
+        // 중앙 정렬 + cover 방식 (꽉 채우기, 잘림 발생)
         const scale = Math.max(canvasW / imgW, canvasH / imgH);
 
         this.defaultImageObject.setElement(img);
@@ -1340,30 +1356,27 @@ export default {
         this.canvas.renderAll();
       };
     },
-
-    // 캔버스 초기화 및 기본 오브젝트 추가
     async initializeCanvas() {
-      const wrapper = this.$el.querySelector(".mobile-wrapper") || this.$el;
-      const rect = wrapper.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-
-      const canvasWidth = rect.width * dpr;
-      const canvasHeight = rect.height * dpr;
+      // 기준 픽셀 크기(모든 폰에서 무난하게 보이는 값)
+      const canvasWidth = 414;
+      const canvasHeight = 736;
 
       this.canvas = markRaw(
         new Canvas(this.$refs.canvas, {
           width: canvasWidth,
           height: canvasHeight,
-          selection: true,
+          selection: false,
           backgroundColor: "#ffffff",
         })
       );
 
-      // CSS 크기는 원래 크기로
-      this.$refs.canvas.style.width = rect.width + "px";
-      this.$refs.canvas.style.height = rect.height + "px";
+      // CSS 크기도 고정(px)
+      this.$refs.canvas.style.width = "100vw";
+      this.$refs.canvas.style.height = "100vh";
+      this.$refs.canvas.style.maxWidth = canvasWidth + "px";
+      this.$refs.canvas.style.maxHeight = canvasHeight + "px";
 
-      // 배경이미지
+      // 배경이미지 중앙 정렬
       const img = new window.Image();
       img.src = this.backroundList[0].src;
       img.onload = async () => {
@@ -1371,6 +1384,7 @@ export default {
         const canvasH = this.canvas.height;
         const imgW = img.width;
         const imgH = img.height;
+        // 중앙 정렬 + cover 방식 (꽉 채우기, 잘림 발생)
         const scale = Math.max(canvasW / imgW, canvasH / imgH);
 
         const fabricImage = new FabricImage(img, {
@@ -1400,94 +1414,6 @@ export default {
         await this.addHumanSvg();
         await this.addHumanControlLayer();
       };
-
-      // mouse:up 이벤트는 한 번만 등록!
-      this.canvas.on("mouse:down", (opt) => {
-        const target = this.canvas.getActiveObject();
-        const objs = this.canvas.getObjects();
-
-        // 1. 기본 이미지는 항상 맨 아래
-        if (this.defaultImageObject) {
-          const idx = objs.indexOf(this.defaultImageObject);
-          if (idx > -1) {
-            objs.splice(idx, 1);
-            objs.unshift(this.defaultImageObject);
-          }
-        }
-
-        // 캐릭터(인간 SVG 그룹)만 클릭 시 셋을 동시에 맨 위로!
-        if (target === this.humanSvgGroup) {
-          [
-            this.humanSvgGroup,
-            this.humanControlLayer,
-            this.clothesSvgGroup,
-          ].forEach((obj) => {
-            const idx = objs.indexOf(obj);
-            if (idx > -1) objs.splice(idx, 1);
-          });
-          if (this.humanSvgGroup) objs.push(this.humanSvgGroup);
-          if (this.humanControlLayer) objs.push(this.humanControlLayer);
-          if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
-
-          this.canvas._objects = objs;
-          this.canvas.renderAll();
-          return;
-        }
-
-        // 텍스트(IText) 클릭 시 배경과 텍스트를 같이 맨 위로!
-        if (target && target.type === "i-text" && target._bgRect) {
-          // 둘 다 배열에서 제거
-          [target._bgRect, target].forEach((obj) => {
-            const idx = objs.indexOf(obj);
-            if (idx > -1) objs.splice(idx, 1);
-          });
-          // 반드시 배경 → 텍스트 순서로 push
-          objs.push(target._bgRect);
-          objs.push(target);
-
-          this.canvas._objects = objs;
-          this.canvas.renderAll();
-          return;
-        }
-
-        // 2. 캐릭터 3종 중 하나라도 클릭하면 셋을 동시에 맨 위로!
-        const isHumanPart = [
-          this.humanControlLayer,
-          this.humanSvgGroup,
-          this.clothesSvgGroup,
-        ].includes(target);
-
-        if (isHumanPart) {
-          [
-            this.humanSvgGroup,
-            this.humanControlLayer,
-            this.clothesSvgGroup,
-          ].forEach((obj) => {
-            const idx = objs.indexOf(obj);
-            if (idx > -1) objs.splice(idx, 1);
-          });
-          if (this.humanSvgGroup) objs.push(this.humanSvgGroup);
-          if (this.humanControlLayer) objs.push(this.humanControlLayer);
-          if (this.clothesSvgGroup) objs.push(this.clothesSvgGroup);
-        } else if (
-          target &&
-          ![
-            this.humanControlLayer,
-            this.humanSvgGroup,
-            this.clothesSvgGroup,
-            this.defaultImageObject,
-          ].includes(target)
-        ) {
-          const idx = objs.indexOf(target);
-          if (idx > -1) {
-            objs.splice(idx, 1);
-            objs.push(target);
-          }
-        }
-
-        this.canvas._objects = objs;
-        this.canvas.renderAll();
-      });
     },
     addSticker(stickerSrc) {
       const img = new window.Image();
@@ -1546,19 +1472,21 @@ export default {
   },
   // 컴포넌트 마운트 시 캔버스 초기화
   mounted: async function () {
-    await this.initializeCanvas();
-    if (this.canvas) {
-      this.canvas.on("object:removed", (e) => {
-        const idx = this.uploadedImages.findIndex(
-          (img) => img.fabricObj === e.target
-        );
-        if (idx !== -1) {
-          this.uploadedImages.splice(idx, 1);
-          this.uploadedImages = this.uploadedImages.slice();
-        }
-        this.updateImageCount();
-      });
-    }
+    this.$nextTick(async () => {
+      await this.initializeCanvas();
+      if (this.canvas) {
+        this.canvas.on("object:removed", (e) => {
+          const idx = this.uploadedImages.findIndex(
+            (img) => img.fabricObj === e.target
+          );
+          if (idx !== -1) {
+            this.uploadedImages.splice(idx, 1);
+            this.uploadedImages = this.uploadedImages.slice();
+          }
+          this.updateImageCount();
+        });
+      }
+    });
   },
 };
 </script>
