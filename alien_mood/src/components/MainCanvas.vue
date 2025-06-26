@@ -1371,10 +1371,8 @@ export default {
       );
 
       // CSS 크기도 고정(px)
-      this.$refs.canvas.style.width = "100vw";
-      this.$refs.canvas.style.height = "100vh";
-      this.$refs.canvas.style.maxWidth = canvasWidth + "px";
-      this.$refs.canvas.style.maxHeight = canvasHeight + "px";
+      this.$refs.canvas.style.width = canvasWidth + "px";
+      this.$refs.canvas.style.height = canvasHeight + "px";
 
       // 배경이미지 중앙 정렬
       const img = new window.Image();
