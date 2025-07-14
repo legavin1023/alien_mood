@@ -16,7 +16,7 @@
       ></div>
       <!-- 패널: 네비 위에서 바닥에 딱 붙어서 열림 -->
       <div
-        class="edit-panel z-0 fixed pt-[28px] left-1/2 bottom-0 rounded-t-[28px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 flex flex-col transition-all duration-300"
+        class="edit-panel z-0 fixed left-1/2 bottom-0 rounded-t-[28px] w-full max-w-[430px] -translate-x-1/2 bg-black-b700 flex flex-col transition-all duration-300"
         :style="{
           height: panelOpen ? '282px' : '0px',
           transform: panelOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)',
@@ -27,9 +27,13 @@
         @touchmove.prevent
       >
         <div
-          class="panel-handle absolute left-1/2 top-[12px] w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200 -translate-x-1/2 select-none"
-          @click="togglePanel"
-        ></div>
+          class="panel-header relative w-[full] h-[28px] flex items-center justify-center"
+        >
+          <div
+            class="panel-handle w-[30px] h-[4px] rounded-full cursor-pointer bg-black-b200"
+            @click="togglePanel"
+          ></div>
+        </div>
         <div
           class="panel-content w-full h-full px-[30px] pb-[12px] flex-1 min-h-0 overflow-y-auto"
           :style="{ overflowY: panelOpen ? 'auto' : 'hidden' }"
@@ -177,17 +181,20 @@
 
           <div v-else-if="activePanelTab === 2">
             <div
-              class="imgBox w-full h-[32px] text-center border-b text-black-b70 border-black-b600"
+              class="imgBox w-full h-[32px] text-center flex items-center justify-center border-b text-black-b70 border-black-b600"
             >
               <span>{{ imageCount }}/3</span>
             </div>
-            <div class="flex gap-[15px] mt-2">
-              <!-- 미리보기 썸네일 -->
+            <div class="flex mt-[14px]" style="gap: 15px">
               <div
                 v-for="(img, idx) in uploadedImages"
                 :key="img.fabricObj.id || img.url"
-                class="w-[90px] h-[90px] bg-black-b600 rounded-[2px] flex items-center justify-center relative"
-                style="position: relative"
+                class="bg-black-b600 rounded-[2px] flex items-center justify-center relative"
+                :style="{
+                  width: 'calc((100% - 30px) / 3)',
+                  aspectRatio: '1 / 1', // 정사각형
+                  position: 'relative',
+                }"
               >
                 <img
                   :src="img.url"
@@ -217,7 +224,12 @@
               <!-- 이미지가 3개 미만일 때만 업로드 버튼 노출 -->
               <label
                 v-if="uploadedImages.length < 3"
-                class="w-[90px] h-[90px] bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
+                class="bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
+                :style="{
+                  width: 'calc((100% - 30px) / 3)',
+                  aspectRatio: '1 / 1', // 정사각형
+                  position: 'relative',
+                }"
               >
                 <img
                   src="@/assets/image/ui/add.svg"
@@ -1325,11 +1337,8 @@ export default {
 
     // 캔버스의 사용자 이미지 개수 갱신
     updateImageCount() {
-      this.imageCount = this.canvas
-        .getObjects()
-        .filter(
-          (obj) => obj.type === "image" && obj.selectable !== false
-        ).length;
+      // 그룹 오브젝트만 카운트 (uploadedImages와 동기화)
+      this.imageCount = this.uploadedImages.length;
     },
     replaceDefaultImage(newImageSrc) {
       if (!this.defaultImageObject) return;
