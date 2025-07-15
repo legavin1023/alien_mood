@@ -1,5 +1,13 @@
 [
-    { "src": "sticker/Ae.png", "label": "에펙" },
-    { "src": "sticker/Ai.png", "label": "일러" },
-    { "src": "sticker/html.png", "label": "html" }
+  { "src": "sticker/01.svg", "label": "" },  
+  { "src": "sticker/02.svg", "label": "" },  
+  { "src": "sticker/03.svg", "label": "" },  
+  { "src": "sticker/04.svg", "label": "" },  
+  { "src": "sticker/05.svg", "label": "" },  
+  { "src": "sticker/06.svg", "label": "" },  
+  { "src": "sticker/07.svg", "label": "" },  
+  { "src": "sticker/08.svg", "label": "" },  
+  { "src": "sticker/09.svg", "label": "" },  
+  { "src": "sticker/10.svg", "label": "" },  
+  { "src": "sticker/11.svg", "label": "" } 
   ]

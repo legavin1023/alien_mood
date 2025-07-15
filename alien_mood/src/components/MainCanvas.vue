@@ -249,7 +249,7 @@
           <div v-else-if="activePanelTab === 3">
             <button
               @click="addTextbox"
-              class="w-[300px] h-[42px] bg-black-b600 rounded-[2px] cursor-pointer p-0 flex items-center justify-center"
+              class="w-[300px] h-[42px] bg-black-b600 rounded-[10px] cursor-pointer p-0 flex items-center justify-center"
               style="margin: 0 auto"
             >
               <span
@@ -275,14 +275,48 @@
           <div v-else-if="activePanelTab === 4"></div>
           <div v-else-if="activePanelTab === 5">
             <!-- 이모티콘 추가 버튼 -->
-            <button
-              v-for="img in StickerList"
-              :key="img.src"
-              @click="addSticker(img.src)"
-              style="background: none; border: none; cursor: pointer"
+            <div
+              class="grid"
+              style="grid-template-columns: repeat(3, 1fr); gap: 15px"
             >
-              <img :src="img.src" :alt="img.label" width="32" height="32" />
-            </button>
+              <div
+                v-for="img in StickerList"
+                :key="img.src"
+                class="flex items-center justify-center bg-black-b800 rounded-[2px]"
+                :style="{
+                  aspectRatio: '1 / 1',
+                  position: 'relative',
+                  width: '100%',
+                  height: 'auto',
+                }"
+              >
+                <button
+                  @click="addSticker(img.src)"
+                  style="
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    width: 100%;
+                    height: 100%;
+                    padding: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <img
+                    :src="img.src"
+                    :alt="img.label"
+                    style="
+                      width: 80%;
+                      height: 80%;
+                      object-fit: contain;
+                      display: block;
+                    "
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -401,7 +435,7 @@ export default {
       selectedClothes: null,
       // { [clothes.name]: index }
       selectedColorIndexes: {},
-      avatarTabs: ["자세", "얼굴형", "머리", "눈", "입", "장식"],
+      avatarTabs: ["얼굴형", "자세", "머리", "눈", "입", "장식"],
       activeAvatarTab: 0,
       imageCount: 0,
       // 캔버스에 추가된 이미지
@@ -412,7 +446,7 @@ export default {
       panelOpen: true,
       touchStartY: 0,
       touchMoveY: 0,
-      activePanelTab: 2,
+      activePanelTab: 3,
     };
   },
   components: {},
@@ -1086,7 +1120,7 @@ export default {
     },
     // 텍스트 추가
     addTextbox() {
-      const text = "1.방문자 카운팅 ";
+      const text = "여기에 입력해주세요.";
       const padding = 12;
       const textbox = new IText(text, {
         left: this.canvas.width / 2,
