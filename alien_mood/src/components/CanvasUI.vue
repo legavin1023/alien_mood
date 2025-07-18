@@ -33,7 +33,7 @@
       </template>
     </div>
     <!-- MainCanvas: 네비/패널은 showPopup이 true면 숨김 -->
-    <div style="padding-top: 34px">
+    <div>
       <MainCanvas ref="mainCanvas" :hideUi="showPopup" />
     </div>
   </div>

@@ -7,6 +7,118 @@
   >
     <canvas ref="canvas" style="border: 1px solid #ccc"></canvas>
 
+    <!-- 텍스트 작성 딤 오버레이 -->
+    <div
+      v-if="showTextOverlay"
+      class="fixed inset-0 z-50 flex items-start justify-center"
+      style="background: rgba(0, 0, 0, 0.5)"
+      @click="closeTextOverlay"
+    >
+      <div
+        class="relative mx-auto px-[20px]"
+        @click.stop
+        :style="{
+          width: '100%',
+          maxWidth: '430px',
+          height: 'calc(100vh - 282px)', // 전체 화면에서 패널 높이(282px) 제외
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: '0px',
+        }"
+      >
+        <!-- 나가기 버튼 (우측 상단) -->
+        <button
+          @click="closeTextOverlay"
+          class="absolute bg-white rounded-full flex items-center justify-center z-10 w-[30px] h-[30px] right-[20px] -top-[10px]"
+          style="border: 2px solid #e5e5e5"
+        >
+          ×
+        </button>
+
+        <!-- 글자수 표시 -->
+        <div
+          class="absolute bottom-[218px] left-1/2 transform -translate-x-1/2 text-white text-[18px]"
+        >
+          {{ overlayText.length }} / 20
+        </div>
+
+        <!-- 텍스트 입력 영역 (실제 텍스트와 동일한 스타일) -->
+        <div
+          class="mx-auto absolute bottom-[170px] left-1/2 transform -translate-x-1/2"
+          :style="{
+            backgroundColor: textBackgroundColors[overlaySelectedColorIndex],
+            borderRadius: '10px',
+            width: 'calc(100% - 60px)', // 양쪽에 30px씩 여백
+            height: '42px',
+          }"
+        >
+          <textarea
+            ref="overlayTextarea"
+            v-model="overlayText"
+            maxlength="20"
+            class="w-full bg-transparent resize-none outline-none text-overlay-input"
+            :style="{
+              fontFamily: 'Pretendard, sans-serif',
+              fontSize: '16px',
+              textAlign: 'center',
+              height: '42px',
+              lineHeight: '42px',
+              color: getTextColor(
+                textBackgroundColors[overlaySelectedColorIndex]
+              ),
+            }"
+            placeholder="여기에 입력해주세요"
+            @keydown.enter.prevent="addTextFromOverlay"
+            @input="updateOverlayText"
+          ></textarea>
+        </div>
+
+        <!-- 색상 선택 버튼들 -->
+        <div class="absolute bottom-[130px] left-[30px] right-[0px]">
+          <div
+            class="flex gap-[16px] p-[8px] overflow-x-auto scrollbar-hide"
+            style="justify-content: flex-start"
+          >
+            <button
+              v-for="(color, idx) in textBackgroundColors"
+              :key="color"
+              @click="overlaySelectedColorIndex = idx"
+              class="w-[20px] h-[20px] rounded-full transition-all duration-200 relative flex-shrink-0"
+              :style="{
+                backgroundColor:
+                  overlaySelectedColorIndex === idx ? '#ffffff' : color,
+              }"
+              :title="`배경색 ${idx + 1}`"
+            >
+              <!-- 선택된 색상에 내부 원 표시 -->
+              <div
+                v-if="overlaySelectedColorIndex === idx"
+                class="absolute inset-[3px] rounded-full border-2"
+                :style="{
+                  backgroundColor: color,
+                  borderColor: '#202020',
+                }"
+              ></div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 완료 버튼 (아래) -->
+        <div
+          class="flex justify-center absolute bottom-[44px] left-1/2 transform -translate-x-1/2"
+        >
+          <button
+            @click="addTextFromOverlay"
+            class="bg-black-b900 text-white w-[110px] h-[38px] inline-block rounded-[500px]"
+          >
+            완료
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 텍스트 편집 시 색상 선택 UI -->
     <div
       v-if="editingTextbox"
@@ -290,31 +402,39 @@
               <div
                 v-for="(textItem, idx) in textboxes"
                 :key="textItem.fabricObj.id || idx"
-                class="rounded-[8px] p-[12px] flex items-center justify-between relative"
+                class="rounded-[10px] p-[12px] relative mx-auto"
                 :style="{
                   backgroundColor:
                     textItem.backgroundColor || 'rgba(0, 0, 0, 0.8)',
+                  width: 'fit-content',
                 }"
               >
                 <input
                   :value="textItem.text"
                   @input="updateTextContent(idx, $event.target.value)"
                   @click="selectTextOnCanvas(textItem.fabricObj)"
-                  class="bg-transparent flex-1 outline-none"
+                  maxlength="20"
+                  class="bg-transparent outline-none w-full pr-[20px] text-center"
                   :style="{
                     color: getTextColor(
                       textItem.backgroundColor || 'rgba(0, 0, 0, 0.8)'
                     ),
                     fontFamily: 'Pretendard, sans-serif',
+                    fontSize: '32px',
+                    minWidth: '0',
                   }"
                   placeholder="텍스트를 입력하세요"
                 />
                 <button
                   @click="removeTextbox(idx)"
-                  class="ml-[8px] w-[24px] h-[24px] bg-red-500 rounded-full flex items-center justify-center text-white text-[14px]"
+                  class="absolute right-[4px] top-[4px] w-[12px] h-[12px] flex items-center justify-center"
                   title="삭제"
                 >
-                  ×
+                  <img
+                    :src="closeTextIcon"
+                    alt="삭제"
+                    class="w-[12px] h-[12px]"
+                  />
                 </button>
               </div>
             </div>
@@ -421,13 +541,7 @@
 </template>
 <script>
 // 이미지, SVG 등 리소스 import
-const req = require.context("@/assets/image", false, /\.png$/);
-const additionalImages = req.keys().map((key, idx) => ({
-  src: req(key),
-  label: `emoji${idx + 1}`,
-}));
-
-import { ref, onMounted, markRaw } from "vue";
+import { markRaw } from "vue";
 import {
   Canvas,
   Rect,
@@ -443,6 +557,7 @@ import {
 import deleteIcon from "@/assets/image/ui/delete.svg";
 import rotateIcon from "@/assets/image/ui/cached.svg";
 import resizeIcon from "@/assets/image/ui/open_in_full.svg";
+import closeTextIcon from "@/assets/image/ui/closeText.svg";
 import human from "@/assets/image/인간.svg";
 import humanArm from "@/assets/image/인간팔.svg";
 
@@ -538,12 +653,20 @@ export default {
       // 현재 선택된 텍스트 배경색 인덱스
       selectedColorIndex: 0,
 
+      // 텍스트 작성 오버레이 관련
+      showTextOverlay: false,
+      overlayText: "",
+      overlaySelectedColorIndex: 0, // 모달에서 선택된 색상 인덱스
+
       //아래 변수들은 터치패널을 위한 변수들
       // panelOpen: false,
       panelOpen: true,
       touchStartY: 0,
       touchMoveY: 0,
       activePanelTab: 3,
+
+      // 아이콘 이미지들
+      closeTextIcon,
     };
   },
   components: {},
@@ -1014,7 +1137,6 @@ export default {
       canvasInstance.requestRenderAll();
     },
     addCharacterControls(obj) {
-      const dpr = window.devicePixelRatio || 1;
       obj.setControlsVisibility({
         tl: false,
         tr: false,
@@ -1108,8 +1230,6 @@ export default {
     },
     // 커스텀 컨트롤 추가
     addCustomControls(obj) {
-      const dpr = window.devicePixelRatio || 1;
-
       obj.setControlsVisibility({
         tl: false,
         tr: false,
@@ -1225,12 +1345,30 @@ export default {
       this.canvas.setActiveObject(rect);
       this.canvas.renderAll();
     },
-    // 텍스트 추가
+    // 텍스트 추가 (오버레이 표시)
     addTextbox() {
-      const text = "여기에 입력해주세요.";
+      this.overlayText = "";
+      this.overlaySelectedColorIndex = 0; // 색상 인덱스 초기화
+      this.showTextOverlay = true;
+      this.$nextTick(() => {
+        if (this.$refs.overlayTextarea) {
+          this.$refs.overlayTextarea.focus();
+        }
+      });
+    },
+
+    // 오버레이에서 텍스트 추가
+    addTextFromOverlay() {
+      if (!this.overlayText.trim()) {
+        this.closeTextOverlay();
+        return;
+      }
+
+      const text = this.overlayText.trim();
       const padding = 12;
-      const defaultBackgroundColor = this.textBackgroundColors[0];
-      const textColor = this.getTextColor(defaultBackgroundColor);
+      const selectedBackgroundColor =
+        this.textBackgroundColors[this.overlaySelectedColorIndex];
+      const textColor = this.getTextColor(selectedBackgroundColor);
 
       const textbox = new IText(text, {
         left: this.canvas.width / 2,
@@ -1238,7 +1376,7 @@ export default {
         originX: "center",
         originY: "center",
         fontSize: 32,
-        fill: textColor, // 배경색에 맞는 텍스트 색상 적용
+        fill: textColor,
         fontFamily: "Pretendard, sans-serif",
         editable: true,
         selectable: true,
@@ -1249,7 +1387,7 @@ export default {
         textAlign: "center",
       });
 
-      // 배경 사각형 생성 (첫 번째 색상으로 설정)
+      // 배경 사각형 생성 (선택된 색상 사용)
       const bgRect = new Rect({
         left: textbox.left,
         top: textbox.top,
@@ -1257,9 +1395,9 @@ export default {
         originY: "center",
         width: textbox.width + padding * 2,
         height: textbox.height + padding * 2,
-        rx: 18,
-        ry: 18,
-        fill: defaultBackgroundColor, // 첫 번째 색상으로 설정
+        rx: 10,
+        ry: 10,
+        fill: selectedBackgroundColor,
         selectable: false,
         evented: false,
         hasBorders: false,
@@ -1307,7 +1445,7 @@ export default {
         );
         if (idx !== -1) {
           this.textboxes[idx].text = textbox.text;
-          this.textboxes = [...this.textboxes]; // 반응성을 위한 새 배열 생성
+          this.textboxes = [...this.textboxes];
         }
         updateBgRect();
       };
@@ -1337,23 +1475,34 @@ export default {
       this.textboxes.push({
         text: text,
         fabricObj: markRaw(textbox),
-        backgroundColor: defaultBackgroundColor, // 배경색 정보 추가
+        backgroundColor: selectedBackgroundColor,
       });
 
-      // 텍스트 추가 후 자동으로 편집 모드로 진입
-      this.$nextTick(() => {
-        textbox.enterEditing();
-        textbox.selectAll();
-        this.canvas.renderAll();
-      });
+      // 오버레이 닫기
+      this.closeTextOverlay();
+    },
+
+    // 텍스트 오버레이 실시간 업데이트
+    updateOverlayText(event) {
+      this.overlayText = event.target.value;
+    },
+
+    // 텍스트 오버레이 닫기
+    closeTextOverlay() {
+      this.showTextOverlay = false;
+      this.overlayText = "";
+      this.overlaySelectedColorIndex = 0; // 색상 인덱스도 초기화
     },
 
     // 패널에서 텍스트 내용 업데이트
     updateTextContent(idx, newText) {
       if (idx >= 0 && idx < this.textboxes.length) {
+        // 20글자 제한
+        const limitedText = newText.slice(0, 20);
+
         const textItem = this.textboxes[idx];
-        textItem.text = newText;
-        textItem.fabricObj.set({ text: newText });
+        textItem.text = limitedText;
+        textItem.fabricObj.set({ text: limitedText });
 
         // 배경 사각형 크기도 업데이트
         if (textItem.fabricObj._bgRect) {
@@ -1913,5 +2062,10 @@ export default {
 }
 .panel-content::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
+}
+
+/* 텍스트 오버레이 placeholder 스타일 */
+.text-overlay-input::placeholder {
+  opacity: 0.5;
 }
 </style>
