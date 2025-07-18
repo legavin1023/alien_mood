@@ -6,6 +6,42 @@
     @touchend="onTouchEnd"
   >
     <canvas ref="canvas" style="border: 1px solid #ccc"></canvas>
+
+    <!-- 텍스트 편집 시 색상 선택 UI -->
+    <div
+      v-if="editingTextbox"
+      class="fixed rounded-[20px] z-50 overflow-hidden"
+      :style="{
+        left: editingTextbox.colorPanelLeft + 'px',
+        top: editingTextbox.colorPanelTop + 'px',
+        transform: 'translate(-50%, 0)',
+        background: 'transparent',
+      }"
+    >
+      <div class="flex gap-[16px] p-[8px] scrollbar-hide">
+        <button
+          v-for="(color, idx) in textBackgroundColors"
+          :key="color"
+          @click="changeTextBackgroundColor(color, idx)"
+          class="w-[20px] h-[20px] rounded-full transition-all duration-200 relative flex-shrink-0"
+          :style="{
+            backgroundColor: selectedColorIndex === idx ? '#ffffff' : color,
+          }"
+          :title="`배경색 ${idx + 1}`"
+        >
+          <!-- 선택된 색상에 내부 원 표시 -->
+          <div
+            v-if="selectedColorIndex === idx"
+            class="absolute inset-[3px] rounded-full border-2"
+            :style="{
+              backgroundColor: color,
+              borderColor: '#202020',
+            }"
+          ></div>
+        </button>
+      </div>
+    </div>
+
     <div v-if="!hideUi">
       <!-- 오버레이: 패널이 열려 있을 때만 표시 -->
       <div
@@ -24,7 +60,6 @@
           pointerEvents: panelOpen ? 'auto' : 'none',
         }"
         @click.stop
-        @touchmove.prevent
       >
         <div
           class="panel-header relative w-[full] h-[28px] flex items-center justify-center"
@@ -255,12 +290,23 @@
               <div
                 v-for="(textItem, idx) in textboxes"
                 :key="textItem.fabricObj.id || idx"
-                class="bg-black-b600 rounded-[8px] p-[12px] flex items-center justify-between relative"
+                class="rounded-[8px] p-[12px] flex items-center justify-between relative"
+                :style="{
+                  backgroundColor:
+                    textItem.backgroundColor || 'rgba(0, 0, 0, 0.8)',
+                }"
               >
                 <input
                   :value="textItem.text"
                   @input="updateTextContent(idx, $event.target.value)"
-                  class="bg-transparent text-white flex-1 outline-none"
+                  @click="selectTextOnCanvas(textItem.fabricObj)"
+                  class="bg-transparent flex-1 outline-none"
+                  :style="{
+                    color: getTextColor(
+                      textItem.backgroundColor || 'rgba(0, 0, 0, 0.8)'
+                    ),
+                    fontFamily: 'Pretendard, sans-serif',
+                  }"
                   placeholder="텍스트를 입력하세요"
                 />
                 <button
@@ -469,6 +515,28 @@ export default {
       uploadedImages: [], // { url, fabricObj } 배열
       // 캔버스에 추가된 텍스트
       textboxes: [], // { text, fabricObj } 배열
+      // 텍스트 배경색 옵션
+      textBackgroundColors: [
+        "rgba(0, 0, 0, 0.8)",
+        "#ffffff",
+        "#0C0C0D",
+        "#00AA39",
+        "#DE9A1C",
+        "#E62929",
+        "#E65529",
+        "#00ACCA",
+        "#0047CA",
+        "#001946",
+        "#5E01FF",
+        "#A675FA",
+        "#DF1AE3",
+        "#EF1F8B",
+        "#EF1F3B",
+      ],
+      // 현재 편집 중인 텍스트
+      editingTextbox: null,
+      // 현재 선택된 텍스트 배경색 인덱스
+      selectedColorIndex: 0,
 
       //아래 변수들은 터치패널을 위한 변수들
       // panelOpen: false,
@@ -1161,14 +1229,17 @@ export default {
     addTextbox() {
       const text = "여기에 입력해주세요.";
       const padding = 12;
+      const defaultBackgroundColor = this.textBackgroundColors[0];
+      const textColor = this.getTextColor(defaultBackgroundColor);
+
       const textbox = new IText(text, {
         left: this.canvas.width / 2,
         top: this.canvas.height / 2,
         originX: "center",
         originY: "center",
         fontSize: 32,
-        fill: "#222",
-        fontFamily: "sans-serif",
+        fill: textColor, // 배경색에 맞는 텍스트 색상 적용
+        fontFamily: "Pretendard, sans-serif",
         editable: true,
         selectable: true,
         evented: true,
@@ -1178,7 +1249,7 @@ export default {
         textAlign: "center",
       });
 
-      // 배경 사각형 생성
+      // 배경 사각형 생성 (첫 번째 색상으로 설정)
       const bgRect = new Rect({
         left: textbox.left,
         top: textbox.top,
@@ -1188,7 +1259,7 @@ export default {
         height: textbox.height + padding * 2,
         rx: 18,
         ry: 18,
-        fill: "#fffbe6",
+        fill: defaultBackgroundColor, // 첫 번째 색상으로 설정
         selectable: false,
         evented: false,
         hasBorders: false,
@@ -1247,6 +1318,14 @@ export default {
       textbox.on("moving", updateBgRect);
       textbox.on("rotating", updateBgRect);
 
+      // 편집 모드 진입/종료 이벤트
+      textbox.on("editing:entered", () => {
+        this.showColorPanel(textbox);
+      });
+      textbox.on("editing:exited", () => {
+        this.hideColorPanel();
+      });
+
       // 최초 위치/순서 보장
       ensureBgBelowText();
 
@@ -1258,6 +1337,14 @@ export default {
       this.textboxes.push({
         text: text,
         fabricObj: markRaw(textbox),
+        backgroundColor: defaultBackgroundColor, // 배경색 정보 추가
+      });
+
+      // 텍스트 추가 후 자동으로 편집 모드로 진입
+      this.$nextTick(() => {
+        textbox.enterEditing();
+        textbox.selectAll();
+        this.canvas.renderAll();
       });
     },
 
@@ -1308,6 +1395,99 @@ export default {
 
         this.canvas.requestRenderAll();
       }
+    },
+
+    // 텍스트 편집 시 색상 패널 표시
+    showColorPanel(textbox) {
+      const bounds = textbox.getBoundingRect();
+      const canvasElement = this.$refs.canvas;
+      const canvasRect = canvasElement.getBoundingClientRect();
+
+      // 현재 텍스트의 배경색에 맞는 색상 인덱스 찾기
+      if (textbox._bgRect) {
+        const currentColor = textbox._bgRect.fill;
+        const colorIndex = this.textBackgroundColors.findIndex(
+          (color) => color === currentColor
+        );
+        this.selectedColorIndex = colorIndex !== -1 ? colorIndex : 0;
+
+        // textboxes 배열의 해당 항목 배경색도 동기화
+        const textIdx = this.textboxes.findIndex(
+          (item) => item.fabricObj === textbox
+        );
+        if (textIdx !== -1 && !this.textboxes[textIdx].backgroundColor) {
+          this.textboxes[textIdx].backgroundColor = currentColor;
+          this.textboxes = [...this.textboxes];
+        }
+      } else {
+        this.selectedColorIndex = 0;
+      }
+
+      this.editingTextbox = {
+        fabricObj: textbox,
+        colorPanelLeft: canvasRect.left + bounds.left + bounds.width / 2,
+        colorPanelTop: canvasRect.top + bounds.top + bounds.height + 10,
+      };
+    },
+
+    // 색상 패널 숨김
+    hideColorPanel() {
+      this.editingTextbox = null;
+      this.selectedColorIndex = 0; // 선택된 색상 인덱스 초기화
+    },
+
+    // 텍스트 배경색 변경
+    changeTextBackgroundColor(color, idx) {
+      if (!this.editingTextbox) return;
+
+      const textbox = this.editingTextbox.fabricObj;
+      if (textbox._bgRect) {
+        textbox._bgRect.set({ fill: color });
+        this.selectedColorIndex = idx; // 선택된 색상 인덱스 업데이트
+
+        // 배경색에 따라 텍스트 색상 변경
+        const textColor = this.getTextColor(color);
+        textbox.set({ fill: textColor });
+
+        this.canvas.requestRenderAll();
+
+        // 패널의 해당 텍스트 항목도 업데이트 (시각적 피드백을 위해)
+        const textIdx = this.textboxes.findIndex(
+          (item) => item.fabricObj === textbox
+        );
+        if (textIdx !== -1) {
+          // 배경색 정보도 업데이트
+          this.textboxes[textIdx].backgroundColor = color;
+          // Vue의 반응성을 위해 배열을 새로 생성
+          this.textboxes = [...this.textboxes];
+        }
+      }
+    },
+
+    // 배경색에 따른 텍스트 색상 결정
+    getTextColor(backgroundColor) {
+      // 흰색 배경일 때는 검정 텍스트
+      if (
+        backgroundColor === "#ffffff" ||
+        backgroundColor.includes("255, 255, 255")
+      ) {
+        return "#000000";
+      }
+      // 그 외에는 흰색 텍스트
+      return "#ffffff";
+    },
+
+    // 패널에서 텍스트 클릭 시 캔버스에서 선택 및 편집 모드 진입
+    selectTextOnCanvas(fabricObj) {
+      this.canvas.setActiveObject(fabricObj);
+      this.canvas.renderAll();
+
+      // 편집 모드로 진입
+      this.$nextTick(() => {
+        fabricObj.enterEditing();
+        fabricObj.selectAll();
+        this.canvas.renderAll();
+      });
     },
 
     // 이미지 추가 (최대 3개)
@@ -1617,6 +1797,20 @@ export default {
         // 스티커는 uploadedImages에 추가하지 않음!
       };
     },
+
+    // 기존 텍스트들의 배경색 정보 동기화
+    syncTextboxBackgroundColors() {
+      let updated = false;
+      this.textboxes.forEach((textItem, idx) => {
+        if (!textItem.backgroundColor && textItem.fabricObj._bgRect) {
+          this.textboxes[idx].backgroundColor = textItem.fabricObj._bgRect.fill;
+          updated = true;
+        }
+      });
+      if (updated) {
+        this.textboxes = [...this.textboxes];
+      }
+    },
   },
   // 컴포넌트 마운트 시 캔버스 초기화
   mounted: async function () {
@@ -1644,7 +1838,29 @@ export default {
 
           this.updateImageCount();
         });
+
+        // 텍스트 편집 이벤트 글로벌 처리
+        this.canvas.on("text:editing:entered", (e) => {
+          if (e.target.type === "i-text") {
+            this.showColorPanel(e.target);
+          }
+        });
+
+        this.canvas.on("text:editing:exited", () => {
+          this.hideColorPanel();
+        });
+
+        // 캔버스 클릭 시 색상 패널 숨김
+        this.canvas.on("mouse:down", (e) => {
+          if (!e.target || e.target.type !== "i-text") {
+            this.hideColorPanel();
+          }
+        });
       }
+
+      // 기존 텍스트들의 배경색 정보 동기화
+      this.syncTextboxBackgroundColors();
+
       // 아래로 스와이프 새로고침 방지
       const wrapper = this.$el.querySelector(".mobile-wrapper");
       if (wrapper) {
@@ -1666,6 +1882,12 @@ export default {
   scrollbar-width: none; /* Firefox */
 }
 .custom-scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
 }
 .edit-panel {
