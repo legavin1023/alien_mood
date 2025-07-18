@@ -247,6 +247,33 @@
             </div>
           </div>
           <div v-else-if="activePanelTab === 3">
+            <!-- 텍스트 목록 -->
+            <div
+              class="flex flex-col gap-[14px] mb-[14px]"
+              v-if="textboxes.length > 0"
+            >
+              <div
+                v-for="(textItem, idx) in textboxes"
+                :key="textItem.fabricObj.id || idx"
+                class="bg-black-b600 rounded-[8px] p-[12px] flex items-center justify-between relative"
+              >
+                <input
+                  :value="textItem.text"
+                  @input="updateTextContent(idx, $event.target.value)"
+                  class="bg-transparent text-white flex-1 outline-none"
+                  placeholder="텍스트를 입력하세요"
+                />
+                <button
+                  @click="removeTextbox(idx)"
+                  class="ml-[8px] w-[24px] h-[24px] bg-red-500 rounded-full flex items-center justify-center text-white text-[14px]"
+                  title="삭제"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <!-- 텍스트 추가 버튼 -->
             <button
               @click="addTextbox"
               class="w-[300px] h-[42px] bg-black-b600 rounded-[10px] cursor-pointer p-0 flex items-center justify-center"
@@ -265,7 +292,7 @@
               >
                 <img
                   src="@/assets/image/ui/add.svg"
-                  alt="이미지 추가"
+                  alt="텍스트 추가"
                   width="40"
                   height="40"
                 />
@@ -440,6 +467,8 @@ export default {
       imageCount: 0,
       // 캔버스에 추가된 이미지
       uploadedImages: [], // { url, fabricObj } 배열
+      // 캔버스에 추가된 텍스트
+      textboxes: [], // { text, fabricObj } 배열
 
       //아래 변수들은 터치패널을 위한 변수들
       // panelOpen: false,
@@ -862,13 +891,23 @@ export default {
     deleteObject(_eventData, transform) {
       const canvasInstance = transform.target.canvas;
 
-      // 1. 텍스트에 배경이 연결되어 있으면 같이 삭제
-      if (
-        transform.target.type === "i-text" &&
-        transform.target._bgRect &&
-        canvasInstance.contains(transform.target._bgRect)
-      ) {
-        canvasInstance.remove(transform.target._bgRect);
+      // 1. 텍스트 삭제 시 패널에서도 삭제
+      if (transform.target.type === "i-text") {
+        const idx = this.textboxes.findIndex(
+          (item) => item.fabricObj === transform.target
+        );
+        if (idx !== -1) {
+          this.textboxes.splice(idx, 1);
+          this.textboxes = [...this.textboxes]; // 반응성을 위한 새 배열 생성
+        }
+
+        // 텍스트에 배경이 연결되어 있으면 같이 삭제
+        if (
+          transform.target._bgRect &&
+          canvasInstance.contains(transform.target._bgRect)
+        ) {
+          canvasInstance.remove(transform.target._bgRect);
+        }
       }
 
       // 2. 캐릭터(인간) 컨트롤 레이어 삭제 시, 인간/옷 그룹도 같이 삭제
@@ -1190,8 +1229,20 @@ export default {
         this.canvas.requestRenderAll();
       };
 
+      // 텍스트 변경 이벤트에서 패널 동기화
+      const syncTextToPanel = () => {
+        const idx = this.textboxes.findIndex(
+          (item) => item.fabricObj === textbox
+        );
+        if (idx !== -1) {
+          this.textboxes[idx].text = textbox.text;
+          this.textboxes = [...this.textboxes]; // 반응성을 위한 새 배열 생성
+        }
+        updateBgRect();
+      };
+
       // 이벤트 연결
-      textbox.on("changed", updateBgRect);
+      textbox.on("changed", syncTextToPanel);
       textbox.on("scaling", updateBgRect);
       textbox.on("moving", updateBgRect);
       textbox.on("rotating", updateBgRect);
@@ -1202,6 +1253,61 @@ export default {
       this.addCustomControls(textbox);
       this.canvas.setActiveObject(textbox);
       this.canvas.renderAll();
+
+      // textboxes 배열에 추가
+      this.textboxes.push({
+        text: text,
+        fabricObj: markRaw(textbox),
+      });
+    },
+
+    // 패널에서 텍스트 내용 업데이트
+    updateTextContent(idx, newText) {
+      if (idx >= 0 && idx < this.textboxes.length) {
+        const textItem = this.textboxes[idx];
+        textItem.text = newText;
+        textItem.fabricObj.set({ text: newText });
+
+        // 배경 사각형 크기도 업데이트
+        if (textItem.fabricObj._bgRect) {
+          const padding = 12;
+          textItem.fabricObj._bgRect.set({
+            width:
+              textItem.fabricObj.width * textItem.fabricObj.scaleX +
+              padding * 2,
+            height:
+              textItem.fabricObj.height * textItem.fabricObj.scaleY +
+              padding * 2,
+          });
+        }
+
+        this.canvas.requestRenderAll();
+        this.textboxes = [...this.textboxes]; // 반응성을 위한 새 배열 생성
+      }
+    },
+
+    // 패널에서 텍스트 삭제
+    removeTextbox(idx) {
+      if (idx >= 0 && idx < this.textboxes.length) {
+        const textItem = this.textboxes[idx];
+
+        // 캔버스에서 텍스트와 배경 삭제
+        if (
+          textItem.fabricObj._bgRect &&
+          this.canvas.contains(textItem.fabricObj._bgRect)
+        ) {
+          this.canvas.remove(textItem.fabricObj._bgRect);
+        }
+        if (this.canvas.contains(textItem.fabricObj)) {
+          this.canvas.remove(textItem.fabricObj);
+        }
+
+        // 배열에서 삭제
+        this.textboxes.splice(idx, 1);
+        this.textboxes = [...this.textboxes]; // 반응성을 위한 새 배열 생성
+
+        this.canvas.requestRenderAll();
+      }
     },
 
     // 이미지 추가 (최대 3개)
@@ -1518,13 +1624,24 @@ export default {
       await this.initializeCanvas();
       if (this.canvas) {
         this.canvas.on("object:removed", (e) => {
-          const idx = this.uploadedImages.findIndex(
+          // 이미지 삭제 처리
+          const imgIdx = this.uploadedImages.findIndex(
             (img) => img.fabricObj === e.target
           );
-          if (idx !== -1) {
-            this.uploadedImages.splice(idx, 1);
+          if (imgIdx !== -1) {
+            this.uploadedImages.splice(imgIdx, 1);
             this.uploadedImages = this.uploadedImages.slice();
           }
+
+          // 텍스트 삭제 처리
+          const textIdx = this.textboxes.findIndex(
+            (item) => item.fabricObj === e.target
+          );
+          if (textIdx !== -1) {
+            this.textboxes.splice(textIdx, 1);
+            this.textboxes = [...this.textboxes]; // 반응성을 위한 새 배열 생성
+          }
+
           this.updateImageCount();
         });
       }
